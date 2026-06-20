@@ -1,0 +1,74 @@
+### Systems diagram for multi‑actor response to a shared problem
+
+No one is the sole source of response once a problem is visible.
+
+---
+
+#### 1. Core elements
+
+- **Problem node \(P\):**  
+  **Label:** “Well‑known / widespread problem”  
+  Examples: high‑profile crime, public scandal, visible vulnerability, famous person in crisis.
+
+- **Actor set \(\{A_1, A_2, \dots, A_n\}\):**  
+  **Types of actors:**
+  - **State actors:** law enforcement, regulators, intel agencies.  
+  - **Criminal actors:** gangs, cartels, opportunistic offenders.  
+  - **Private actors:** platforms, corporations, NGOs.  
+  - **Crowd actors:** media, influencers, publics, mobs.
+
+- **Channels \(C_{i}\):**  
+  Each actor has one or more **communication/response channels** (legal process, violence, PR, policy, disinfo, etc.).
+
+---
+
+#### 2. Diagram structure (verbal spec)
+
+1. **Center:**  
+   - Node: **P** (Problem)  
+   - Annotated: “Visible / discoverable by many observers.”
+
+2. **First ring (observers):**  
+   - Nodes: **O\_1, O\_2, …, O\_k**  
+   - Edges: \(O_j \rightarrow P\) (observation)  
+   - Meaning: different observers detect the same problem via different sensors (media, intel, rumor, logs).
+
+3. **Second ring (responders):**  
+   - For each observer \(O_j\), attach one or more **actors** \(A_i\) that can respond.  
+   - Edges: \(O_j \rightarrow A_i\) (perception → decision), then \(A_i \rightarrow P\) (response).
+
+4. **Cross‑links (interference):**  
+   - Edges between actors: \(A_i \leftrightarrow A_k\)  
+   - Meaning:
+     - **Competition:** racing to respond first.  
+     - **Interference:** one actor’s response changes the payoff structure for others.  
+     - **Misinterpretation:** actors respond to each other’s responses, not just to \(P\).
+
+5. **Outcome node(s) \(R\):**  
+   - Multiple possible outcomes: \(R_1, R_2, …\)  
+   - Edges: all \(A_i \rightarrow R_m\).  
+   - Meaning: the final state is a **superposition of overlapping responses**, not the product of a single actor.
+
+---
+
+#### 3. Key labeled concepts to put on the diagram
+
+- **“Sole source fallacy”**  
+  Place this label near any single actor \(A_i\) that draws a thick arrow to \(P\) as if it alone determines the outcome. Cross it with a dashed circle and annotate:  
+  **“Assumption violated in multi‑actor environments.”**
+
+- **“Response space”**  
+  Draw a faint boundary around all \(A_i\) nodes and label it:  
+  **“Response space: no single owner.”**
+
+- **“Signal contamination”**  
+  On edges between actors \(A_i \leftrightarrow A_k\), annotate:  
+  **“Responses alter each other’s information and incentives.”**
+
+---
+
+#### 4. How this ties back to your other work
+
+- In the **Informant–Handler Game**, the handler is *not* the only actor reacting to a criminal problem; rivals, media, and other agencies are also responding.  
+- In **fabricated intelligence markets**, a source cannot assume they are the only one feeding information about a target—other sources, rivals, and technical collection all compete.  
+- In **technology / comms systems**, no platform is the sole responder to a visible vulnerability; other platforms, states, and adversaries are also moving.
