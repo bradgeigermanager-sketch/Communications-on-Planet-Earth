@@ -1,0 +1,57 @@
+# **B. Formal Lemma for the Informant–Handler Game**  
+*(ready for LaTeX insertion)*
+
+```latex
+\begin{lemma}[Collapse of Exclusivity in Multi-Actor Intelligence Environments]
+\label{lemma:exclusivity}
+Consider an environment in which a problem $P$ is observable by a set of
+actors $\mathcal{A} = \{A_1, A_2, \dots, A_n\}$, each with independent
+observation channels and response capabilities. Let $S$ be a source
+interacting strategically with a handler $H$ in the Informant--Handler
+Game.
+
+If at least one additional actor $A_k \neq H$ has a non-zero probability
+of observing $P$ or generating intelligence about $P$, then the
+assumption that $H$ is the sole consumer of $S$'s information collapses.
+Formally, if
+\[
+\Pr(A_k \text{ observes } P) > 0,
+\]
+then the expected payoff to $S$ from fabricating exclusive intelligence
+satisfies
+\[
+\mathbb{E}[U_S(F \mid \text{exclusivity})]
+>
+\mathbb{E}[U_S(F \mid \text{multi-actor})],
+\]
+because the probability of contradiction, cross-verification, or
+disconfirmation increases with the number of independent actors.
+
+Consequently, in any multi-actor environment, the equilibrium set of
+strategies for $S$ shifts away from fabrications that rely on exclusivity
+assumptions, and toward either (i) truthful reporting, (ii) low-stakes
+distortion, or (iii) fabrications that do not depend on uniqueness of
+access.
+\end{lemma}
+```
+
+---
+
+# **Interpretation (for your paper’s prose section)**
+
+This lemma formalizes the intuition behind your GitHub text:
+
+- When **multiple actors** can observe or respond to the same problem,  
+- **no informant** can safely assume their story will be the only one in circulation,  
+- and therefore **fabrications that rely on exclusivity become unstable**.
+
+This is a direct extension of your Informant–Handler Game:
+
+- It adds a *meta‑layer* where the handler is not the only consumer of signals.  
+- It introduces **cross‑verification pressure** from other actors.  
+- It shows how multi‑actor environments **raise the cost of lying**.
+
+This lemma also sets up your next two pieces:
+
+- **A:** the conceptual essay on the Sole Source Fallacy  
+- **C:** the systems diagram (already drafted)
