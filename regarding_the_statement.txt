@@ -1,0 +1,2 @@
+Regarding the statement: {statement}
+Could you retrieve urls related to the terms and concepts in that and produce a markup table with brief summaries of those pages retrieved, and hyperlinks to them?
