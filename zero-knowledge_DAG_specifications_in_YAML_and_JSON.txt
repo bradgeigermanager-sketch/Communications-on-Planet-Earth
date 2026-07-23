@@ -1,0 +1,202 @@
+### High-level comparison
+
+| Aspect | Standard FRT DAG | Zero-knowledge variant |
+|--------|------------------|------------------------|
+| Template visibility | Biometric templates visible to matching engine | Only encrypted/hashed templates; raw biometrics never leave secure enclave |
+| Identity linkage | Match engine sees identity_id | Match engine sees pseudonymous template IDs; identity linkage happens outside enclave |
+| Outputs | Direct identity matches | ZK proofs of “same person” / “multi-ID/single-face” / “single-ID/multi-face” without exposing biometrics |
+
+---
+
+## 1. Node set for zero-knowledge biometric matching
+
+**Core ZK nodes**
+
+- **BIO_ENROLL_ZK**  
+  Enrolls biometric templates into a secure enclave / ZK registry.
+
+- **MATCH_REQUEST_ZK**  
+  Submits a matching request (e.g., “check multi-ID/single-face”) using pseudonymous template IDs.
+
+- **ZK_MATCH_ENGINE**  
+  Performs matching inside a secure enclave or via MPC/ZK protocols; emits *proofs*, not raw matches.
+
+- **ZK_PROOF_VALIDATOR**  
+  Verifies proofs and converts them into high-level fraud signals.
+
+**Fraud signal nodes (unchanged semantics, but ZK-backed)**
+
+- **MULTI_ID_FACE_ZK**  
+  Emits `fraud_signal` of type `multi_id_single_face` based on ZK proofs.
+
+- **SINGLE_ID_FACE_ZK**  
+  Emits `fraud_signal` of type `single_id_multi_face` based on ZK proofs.
+
+**Downstream nodes (same as before)**
+
+- **RISK_AGG**  
+- **CASE_MGMT**  
+- **AUDIT_LOG**  
+- **POLICY_ENF**
+
+---
+
+## 2. ZK DAG structure (ASCII)
+
+```text
+      BIO_IN
+        |
+        v
+  BIO_ENROLL_ZK  ---> AUDIT_LOG
+        |
+        v
+  MATCH_REQUEST_ZK  ---> AUDIT_LOG
+        |
+        v
+  ZK_MATCH_ENGINE  ---> AUDIT_LOG
+        |
+        v
+  ZK_PROOF_VALIDATOR
+      |           |
+      v           v
+MULTI_ID_FACE_ZK  SINGLE_ID_FACE_ZK
+      \           /
+       \         /
+        \       /
+          v   v
+          RISK_AGG
+             |
+             v
+          CASE_MGMT
+             |
+             v
+          AUDIT_LOG
+             ^
+             |
+         POLICY_ENF
+```
+
+---
+
+## 3. YAML DAG spec (zero-knowledge variant)
+
+```yaml
+dag:
+  name: zk_biometric_fraud_detection
+  version: "1.0"
+
+  nodes:
+    - id: BIO_IN
+      type: ingestion
+      description: Ingest biometric_template (face, fingerprint, iris, retina)
+      triggers:
+        - event: biometric.created
+        - event: biometric.updated
+      outputs: [biometric_template]
+
+    - id: BIO_ENROLL_ZK
+      type: zk_enrollment
+      description: Enroll biometric templates into secure enclave / ZK registry
+      inputs: [biometric_template]
+      outputs: [zk_template_ref]
+
+    - id: MATCH_REQUEST_ZK
+      type: zk_request
+      description: Build ZK matching requests (multi-ID/single-face, single-ID/multi-face)
+      inputs: [zk_template_ref]
+      outputs: [zk_match_request]
+
+    - id: ZK_MATCH_ENGINE
+      type: zk_engine
+      description: Perform privacy-preserving matching inside enclave/MPC
+      inputs: [zk_match_request]
+      outputs: [zk_match_proof]
+
+    - id: ZK_PROOF_VALIDATOR
+      type: zk_validation
+      description: Validate proofs and emit high-level fraud signals
+      inputs: [zk_match_proof]
+      outputs: [fraud_signal]
+
+    - id: MULTI_ID_FACE_ZK
+      type: feature
+      description: Multi-ID / single-face detection from ZK proofs
+      inputs: [fraud_signal]
+      outputs: [fraud_signal]
+
+    - id: SINGLE_ID_FACE_ZK
+      type: feature
+      description: Single-ID / multi-face detection from ZK proofs
+      inputs: [fraud_signal]
+      outputs: [fraud_signal]
+
+    - id: RISK_AGG
+      type: scoring
+      description: Aggregate fraud signals into identity_risk_score
+      inputs: [fraud_signal]
+      outputs: [identity_risk_score]
+
+    - id: CASE_MGMT
+      type: decision
+      description: Open or update fraud_case when risk exceeds threshold
+      inputs: [identity_risk_score, fraud_signal]
+      outputs: [fraud_case]
+
+    - id: AUDIT_LOG
+      type: governance
+      description: Write audit_log_entry for every node execution
+      inputs: [*]
+      outputs: [audit_log_entry]
+
+    - id: POLICY_ENF
+      type: governance
+      description: Enforce access_policy before node execution
+      inputs: [access_policy]
+      outputs: []
+
+  edges:
+    - { from: BIO_IN,          to: BIO_ENROLL_ZK }
+    - { from: BIO_ENROLL_ZK,   to: MATCH_REQUEST_ZK }
+    - { from: MATCH_REQUEST_ZK,to: ZK_MATCH_ENGINE }
+    - { from: ZK_MATCH_ENGINE, to: ZK_PROOF_VALIDATOR }
+    - { from: ZK_PROOF_VALIDATOR, to: MULTI_ID_FACE_ZK }
+    - { from: ZK_PROOF_VALIDATOR, to: SINGLE_ID_FACE_ZK }
+
+    - { from: MULTI_ID_FACE_ZK,   to: RISK_AGG }
+    - { from: SINGLE_ID_FACE_ZK,  to: RISK_AGG }
+    - { from: RISK_AGG,           to: CASE_MGMT }
+
+    - { from: POLICY_ENF, to: BIO_IN }
+    - { from: POLICY_ENF, to: BIO_ENROLL_ZK }
+    - { from: POLICY_ENF, to: MATCH_REQUEST_ZK }
+    - { from: POLICY_ENF, to: ZK_MATCH_ENGINE }
+    - { from: POLICY_ENF, to: ZK_PROOF_VALIDATOR }
+    - { from: POLICY_ENF, to: MULTI_ID_FACE_ZK }
+    - { from: POLICY_ENF, to: SINGLE_ID_FACE_ZK }
+    - { from: POLICY_ENF, to: RISK_AGG }
+    - { from: POLICY_ENF, to: CASE_MGMT }
+
+    - { from: BIO_IN,            to: AUDIT_LOG }
+    - { from: BIO_ENROLL_ZK,     to: AUDIT_LOG }
+    - { from: MATCH_REQUEST_ZK,  to: AUDIT_LOG }
+    - { from: ZK_MATCH_ENGINE,   to: AUDIT_LOG }
+    - { from: ZK_PROOF_VALIDATOR,to: AUDIT_LOG }
+    - { from: MULTI_ID_FACE_ZK,  to: AUDIT_LOG }
+    - { from: SINGLE_ID_FACE_ZK, to: AUDIT_LOG }
+    - { from: RISK_AGG,          to: AUDIT_LOG }
+    - { from: CASE_MGMT,         to: AUDIT_LOG }
+```
+
+---
+
+## 4. What this variant guarantees
+
+- Raw biometrics never leave the **BIO_ENROLL_ZK** enclave.  
+- Matching is done via **ZK/MPC**, emitting only proofs.  
+- Fraud signals are derived from proofs, not from exposed templates.  
+- The rest of the fraud‑detection DAG (RISK_AGG, CASE_MGMT, AUDIT_LOG, POLICY_ENF) stays intact.
+
+Also Available:
+
+- The **ZK proof formats** (e.g., “same face across N IDs” proof schema)  
+- Maps of this DAG to various tech stacks (e.g., enclaves + MPC + Kafka).
