@@ -1,0 +1,248 @@
+### Overview of ZK proof types
+
+| Proof type | Statement being proved | Use in fraud detection |
+|-----------|------------------------|-------------------------|
+| SAME_FACE_ACROSS_IDS | One face template is linked to N distinct identities | Multi‑ID / single‑face (synthetic/clustered IDs) |
+| MULTI_FACE_FOR_ID | One identity is linked to ≥2 distinct face templates | Single‑ID / multi‑face (impersonation/stolen ID) |
+| CONSISTENT_IDENTITY_GRAPH | Identity’s data graph has no contradictions | Synthetic‑ID exclusion / consistency |
+| DOCUMENT_AUTH_PROOF | Document is authentic per detector, without exposing raw features | Fake/forged document detection |
+
+Below are concrete **proof format schemas**—how a verifier outside the enclave sees them.
+
+---
+
+### 1. SAME_FACE_ACROSS_IDS proof
+
+**Statement:**  
+“Within the enclave, a single facial template matches N different identity records above threshold T, without revealing the template or raw identities.”
+
+#### JSON schema (conceptual)
+
+```json
+{
+  "$id": "SameFaceAcrossIdsProof",
+  "type": "object",
+  "properties": {
+    "proof_id": { "type": "string" },
+    "proof_type": { "type": "string", "enum": ["SAME_FACE_ACROSS_IDS"] },
+
+    "public_inputs": {
+      "type": "object",
+      "properties": {
+        "template_ref_hash": { "type": "string" },
+        "identity_ref_hashes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "min_confidence_threshold": { "type": "number" }
+      },
+      "required": ["template_ref_hash", "identity_ref_hashes", "min_confidence_threshold"]
+    },
+
+    "zk_commitments": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+
+    "zk_proof_blob": { "type": "string" },
+
+    "verifier_params": {
+      "type": "object",
+      "properties": {
+        "scheme": { "type": "string" },
+        "curve": { "type": "string" },
+        "vk_hash": { "type": "string" }
+      }
+    }
+  },
+  "required": ["proof_id", "proof_type", "public_inputs", "zk_proof_blob"]
+}
+```
+
+**Semantics:**
+
+- `template_ref_hash`: hash of an internal template reference (not the template itself).  
+- `identity_ref_hashes`: hashes of internal identity references (not raw IDs).  
+- Verifier checks: “There exists a face template that matches all referenced identities with confidence ≥ T.”
+
+---
+
+### 2. MULTI_FACE_FOR_ID proof
+
+**Statement:**  
+“Within the enclave, a single identity is linked to at least two distinct facial templates that are not mutually matching above threshold T.”
+
+#### JSON schema
+
+```json
+{
+  "$id": "MultiFaceForIdProof",
+  "type": "object",
+  "properties": {
+    "proof_id": { "type": "string" },
+    "proof_type": { "type": "string", "enum": ["MULTI_FACE_FOR_ID"] },
+
+    "public_inputs": {
+      "type": "object",
+      "properties": {
+        "identity_ref_hash": { "type": "string" },
+        "template_ref_hashes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "non_match_threshold": { "type": "number" }
+      },
+      "required": ["identity_ref_hash", "template_ref_hashes", "non_match_threshold"]
+    },
+
+    "zk_commitments": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+
+    "zk_proof_blob": { "type": "string" },
+
+    "verifier_params": {
+      "type": "object",
+      "properties": {
+        "scheme": { "type": "string" },
+        "curve": { "type": "string" },
+        "vk_hash": { "type": "string" }
+      }
+    }
+  },
+  "required": ["proof_id", "proof_type", "public_inputs", "zk_proof_blob"]
+}
+```
+
+**Semantics:**
+
+- Verifier learns only: “This identity is associated with ≥2 distinct faces that do not match each other above T.”  
+- This feeds directly into `single_id_multi_face` fraud signals.
+
+---
+
+### 3. CONSISTENT_IDENTITY_GRAPH proof
+
+**Statement:**  
+“Given all internal records for an identity (birth, address, employment, travel), there are no contradictions according to a defined consistency rule set.”
+
+#### JSON schema
+
+```json
+{
+  "$id": "ConsistentIdentityGraphProof",
+  "type": "object",
+  "properties": {
+    "proof_id": { "type": "string" },
+    "proof_type": { "type": "string", "enum": ["CONSISTENT_IDENTITY_GRAPH"] },
+
+    "public_inputs": {
+      "type": "object",
+      "properties": {
+        "identity_ref_hash": { "type": "string" },
+        "rule_set_hash": { "type": "string" }
+      },
+      "required": ["identity_ref_hash", "rule_set_hash"]
+    },
+
+    "zk_proof_blob": { "type": "string" },
+    "verifier_params": {
+      "type": "object",
+      "properties": {
+        "scheme": { "type": "string" },
+        "vk_hash": { "type": "string" }
+      }
+    }
+  },
+  "required": ["proof_id", "proof_type", "public_inputs", "zk_proof_blob"]
+}
+```
+
+**Semantics:**
+
+- If proof verifies: identity graph is consistent → **no synthetic‑ID signal** from this dimension.  
+- If proof cannot be produced: system can emit `data_inconsistency` signals.
+
+---
+
+### 4. DOCUMENT_AUTH_PROOF
+
+**Statement:**  
+“An internal document detector judged this document as authentic above threshold T, without exposing raw image or feature data.”
+
+#### JSON schema
+
+```json
+{
+  "$id": "DocumentAuthProof",
+  "type": "object",
+  "properties": {
+    "proof_id": { "type": "string" },
+    "proof_type": { "type": "string", "enum": ["DOCUMENT_AUTH_PROOF"] },
+
+    "public_inputs": {
+      "type": "object",
+      "properties": {
+        "document_ref_hash": { "type": "string" },
+        "min_authenticity_threshold": { "type": "number" }
+      },
+      "required": ["document_ref_hash", "min_authenticity_threshold"]
+    },
+
+    "zk_proof_blob": { "type": "string" },
+    "verifier_params": {
+      "type": "object",
+      "properties": {
+        "scheme": { "type": "string" },
+        "vk_hash": { "type": "string" }
+      }
+    }
+  },
+  "required": ["proof_id", "proof_type", "public_inputs", "zk_proof_blob"]
+}
+```
+
+**Semantics:**
+
+- Verifier learns: “Detector says this doc is authentic ≥ T” or no valid proof exists (which can trigger `document_manipulation` signals).
+
+---
+
+### 5. How proofs feed fraud signals
+
+For each proof type, the ZK validator node does:
+
+```pseudo
+function ZK_PROOF_VALIDATOR(proof):
+    if VERIFY(proof.zk_proof_blob, proof.public_inputs, proof.verifier_params):
+        switch proof.proof_type:
+            case "SAME_FACE_ACROSS_IDS":
+                emit FRAUD_SIGNAL(type="multi_id_single_face",
+                                  details="template_ref:" + proof.public_inputs.template_ref_hash)
+            case "MULTI_FACE_FOR_ID":
+                emit FRAUD_SIGNAL(type="single_id_multi_face",
+                                  details="identity_ref:" + proof.public_inputs.identity_ref_hash)
+            case "CONSISTENT_IDENTITY_GRAPH":
+                // no fraud signal; may lower risk
+            case "DOCUMENT_AUTH_PROOF":
+                // no fraud signal; may lower document-manipulation risk
+    else:
+        // failed proof or missing proof can itself be a signal
+        emit FRAUD_SIGNAL(type="data_inconsistency",
+                          details="proof_verification_failed:" + proof.proof_type)
+```
+
+---
+
+### 6. Design constraints to keep this rights‑preserving
+
+- Public inputs are **hashes of internal references**, not raw IDs or biometrics.  
+- Proofs reveal only **structure of relationships** (e.g., “same face across N IDs”), not the underlying data.  
+- Verifier can act (raise fraud signals, adjust risk) without ever seeing biometrics or full identity graphs.  
+- All proof verification is logged via `audit_log_entry` and governed by `access_policy`.
+
+Additionally Available:
+
+- Maps of these proof formats to concrete ZK stacks (e.g., Groth16/Plonk/STARK)  
+- The **internal circuits** (constraints) for SAME_FACE_ACROSS_IDS and MULTI_FACE_FOR_ID.
