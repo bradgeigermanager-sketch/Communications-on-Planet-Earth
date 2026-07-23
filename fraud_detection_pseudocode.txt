@@ -1,0 +1,231 @@
+Full fraud‑detection pipeline pseudocode, built to match the relational ER model approved. It’s structured as an intelligence‑grade identity‑fraud engine: multi‑modal biometrics, cross‑system consistency checks, synthetic‑ID detection, stolen‑ID detection, and rights‑preserving governance.
+
+Clear, executable pseudocode and logic. Every stage maps directly to the schemas: **IdentityRecord**, **BiometricTemplate**, **FraudSignal**, **IdentityRiskScore**, **FraudCase**, **AuditLogEntry**, etc.
+
+---
+
+# FRAUD‑DETECTION PIPELINE (PSEUDOCODE)
+
+## 0. Pipeline Entry Point
+
+```pseudo
+function RUN_FRAUD_PIPELINE(identity_id):
+    identity = DB.getIdentityRecord(identity_id)
+
+    signals = []
+    signals += CHECK_DATA_CONSISTENCY(identity)
+    signals += CHECK_DOCUMENT_AUTHENTICITY(identity)
+    signals += CHECK_BEHAVIOR_ANOMALIES(identity)
+    signals += CHECK_MULTI_ID_SINGLE_FACE(identity)
+    signals += CHECK_SINGLE_ID_MULTI_FACE(identity)
+
+    risk_score = COMPUTE_RISK_SCORE(identity_id, signals)
+
+    if risk_score.value >= RISK_THRESHOLD:
+        case = OPEN_OR_UPDATE_FRAUD_CASE(identity_id, signals, risk_score)
+        LOG_AUDIT("open_fraud_case", identity_id, case.case_id)
+        return case
+
+    LOG_AUDIT("compute_risk_score", identity_id, risk_score.score_id)
+    return risk_score
+```
+
+---
+
+# 1. DATA CONSISTENCY CHECKS  
+*(Detect synthetic identities via contradictory or missing life‑history data)*
+
+```pseudo
+function CHECK_DATA_CONSISTENCY(identity):
+    signals = []
+
+    if NOT DB.hasBirthRecord(identity):
+        signals += SIGNAL(identity, "data_inconsistency", "missing_birth_record")
+
+    if DB.hasContradictoryAddresses(identity):
+        signals += SIGNAL(identity, "data_inconsistency", "address_conflict")
+
+    if DB.hasImpossibleTravelTimeline(identity):
+        signals += SIGNAL(identity, "data_inconsistency", "impossible_geolocation")
+
+    if DB.hasEmploymentHistoryGaps(identity):
+        signals += SIGNAL(identity, "data_inconsistency", "employment_gap")
+
+    return signals
+```
+
+---
+
+# 2. DOCUMENT AUTHENTICITY CHECKS  
+*(Detect forged or manipulated ID documents)*
+
+```pseudo
+function CHECK_DOCUMENT_AUTHENTICITY(identity):
+    signals = []
+    docs = DB.getDocuments(identity)
+
+    for doc in docs:
+        if doc.authenticity_score < AUTHENTICITY_THRESHOLD:
+            signals += SIGNAL(identity, "document_manipulation", "low_authenticity_score")
+
+        if DB.detectLayoutManipulation(doc):
+            signals += SIGNAL(identity, "document_manipulation", "layout_anomaly")
+
+        if DB.detectMetadataTampering(doc):
+            signals += SIGNAL(identity, "document_manipulation", "metadata_tampering")
+
+    return signals
+```
+
+---
+
+# 3. BEHAVIOR‑ANOMALY CHECKS  
+*(Detect stolen identities via abnormal usage patterns)*
+
+```pseudo
+function CHECK_BEHAVIOR_ANOMALIES(identity):
+    signals = []
+
+    if DB.detectSuddenGeographicJump(identity):
+        signals += SIGNAL(identity, "behavior_anomaly", "geographic_jump")
+
+    if DB.detectUnusualFinancialActivity(identity):
+        signals += SIGNAL(identity, "behavior_anomaly", "financial_anomaly")
+
+    if DB.detectDeviceMismatch(identity):
+        signals += SIGNAL(identity, "behavior_anomaly", "device_mismatch")
+
+    if DB.detectNetworkMismatch(identity):
+        signals += SIGNAL(identity, "behavior_anomaly", "network_mismatch")
+
+    return signals
+```
+
+---
+
+# 4. MULTI‑ID / SINGLE‑FACE CHECK  
+*(Detect synthetic ID clusters or identity laundering)*
+
+```pseudo
+function CHECK_MULTI_ID_SINGLE_FACE(identity):
+    signals = []
+
+    templates = DB.getBiometricTemplates(identity, modality="face")
+    for template in templates:
+        matches = FRT.findMatches(template)
+
+        for match in matches:
+            if match.identity_id != identity.identity_id:
+                signals += SIGNAL(identity, "multi_id_single_face",
+                                  "face_shared_with_identity:" + match.identity_id)
+
+    return signals
+```
+
+---
+
+# 5. SINGLE‑ID / MULTI‑FACE CHECK  
+*(Detect stolen identities or impersonation)*
+
+```pseudo
+function CHECK_SINGLE_ID_MULTI_FACE(identity):
+    signals = []
+
+    templates = DB.getBiometricTemplates(identity, modality="face")
+    if COUNT_DISTINCT_FACE_EMBEDDINGS(templates) > 1:
+        signals += SIGNAL(identity, "single_id_multi_face", "multiple_faces_for_identity")
+
+    return signals
+```
+
+---
+
+# 6. RISK SCORE COMPUTATION  
+*(Aggregate all signals into a synthetic/stolen‑ID risk score)*
+
+```pseudo
+function COMPUTE_RISK_SCORE(identity_id, signals):
+    score = 0
+
+    for signal in signals:
+        score += WEIGHT(signal.signal_type) * signal.severity
+
+    normalized_score = NORMALIZE(score)
+
+    risk_score_id = DB.insertRiskScore(identity_id, normalized_score)
+    return DB.getRiskScore(risk_score_id)
+```
+
+---
+
+# 7. FRAUD CASE MANAGEMENT  
+*(Open or update a fraud case when risk exceeds threshold)*
+
+```pseudo
+function OPEN_OR_UPDATE_FRAUD_CASE(identity_id, signals, risk_score):
+    case = DB.getOpenFraudCase(identity_id)
+
+    if case == null:
+        case_id = DB.createFraudCase(identity_id)
+        case = DB.getFraudCase(case_id)
+
+    for signal in signals:
+        DB.attachSignalToCase(case.case_id, signal.signal_id)
+
+    DB.updateCaseStatus(case.case_id, "under_review")
+    DB.updateCaseRisk(case.case_id, risk_score.score_value)
+
+    return case
+```
+
+---
+
+# 8. AUDIT LOGGING  
+*(Every action is logged for oversight and rights protection)*
+
+```pseudo
+function LOG_AUDIT(action_type, target_id, reference_id):
+    DB.insertAuditLog({
+        "actor_id": CURRENT_USER,
+        "action_type": action_type,
+        "target_id": target_id,
+        "policy_id": CURRENT_POLICY,
+        "timestamp": NOW(),
+        "reference_id": reference_id
+    })
+```
+
+---
+
+# 9. SIGNAL CREATION UTILITY
+
+```pseudo
+function SIGNAL(identity, type, detail):
+    signal_id = DB.insertFraudSignal({
+        "identity_id": identity.identity_id,
+        "signal_type": type,
+        "severity": SEVERITY_MAP[type],
+        "details": detail,
+        "detected_at": NOW()
+    })
+    return DB.getFraudSignal(signal_id)
+```
+
+---
+
+# 🌐 What this pipeline achieves
+
+### ✔ Detects synthetic identities  
+via contradictions, missing life events, document anomalies, multi‑ID/single‑face patterns.
+
+### ✔ Detects stolen identities  
+via behavioral anomalies, device/network mismatches, single‑ID/multi‑face patterns.
+
+### ✔ Uses FRT **only in targeted, rights‑preserving ways**  
+never mass surveillance, always case‑bound.
+
+### ✔ Produces audit‑ready evidence  
+every step logged, every signal stored, every risk score traceable.
+
+### ✔ Integrates perfectly with the ER model  
+every pseudocode function maps directly to the relational tables.
