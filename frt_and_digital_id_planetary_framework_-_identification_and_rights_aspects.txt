@@ -1,0 +1,350 @@
+FRT and digital ID—planet‑scale, rights‑anchored, but still capable of detecting criminals who hide behind stolen or synthetic identities. 
+A formal framework.=:
+
+---
+
+## 1. Purpose and scope of the planetary framework
+
+This framework governs **any system** that:
+
+- **Uses FRT** in public or semi‑public spaces (streets, transit, stadiums, borders, government offices).
+- **Links FRT** to **digital identity systems** and **national ID numbers**.
+- **Processes identity data** that could be:
+  - Genuine,  
+  - Stolen (identity theft), or  
+  - Synthetic (constructed from fragments, fabricated records, or manipulated official data).
+
+**Core aim:**  
+Maximize **rights protection and anonymity in ordinary life**, while enabling **targeted, accountable detection** of serious criminals—including those using stolen or synthetic IDs—through **data‑consistency and fraud‑analytics**, not blanket biometric surveillance.
+
+---
+
+## 2. Foundational rights and design principles
+
+### 2.1 Rights baseline
+
+**1. Presumption of anonymity in public**
+
+- Default assumption: a person in public is **not identified** unless there is a **specific, legally justified reason**.
+- FRT must not be used for continuous, population‑wide identification.
+
+**2. Purpose limitation**
+
+- Every FRT/ID use must have a **clearly defined, narrow purpose**:
+  - Serious violent crime investigation  
+  - Counter‑terrorism  
+  - Missing persons  
+  - Border/immigration control under law  
+  - High‑value fraud and identity‑crime investigations
+- “General safety” or “efficiency” is **not** sufficient.
+
+**3. Necessity and proportionality**
+
+- FRT is only used when **no less intrusive method** can reasonably achieve the same goal.
+- The scope (time, place, population) must be **proportionate** to the threat.
+
+**4. Non‑discrimination and bias control**
+
+- Systems must be tested and monitored for demographic bias.
+- If bias is detected, deployment is paused or constrained until mitigated.
+
+**5. Due process and contestability**
+
+- Individuals must be able to:
+  - Access records of FRT‑based decisions affecting them.
+  - Challenge and correct errors.
+  - Seek remedies for misuse or harm.
+
+These align with emerging digital identity rights frameworks that emphasize consent, traceability, and legal enforceability of identity protections.   [arXiv.org](https://arxiv.org/pdf/2508.01997v1)  [api.emergentmind.com](https://api.emergentmind.com/topics/ai-identity-boundaries)
+
+---
+
+## 3. System architecture: layers and constraints
+
+We design the system as **four layers**, each with explicit rights‑preserving constraints.
+
+### 3.1 Enrollment and identity layer
+
+**Goal:** Ensure that official identities are robust, hard to fake, and protected.
+
+- **Verified enrollment:**
+  - In‑person checks, multi‑factor verification (documents, biometrics, attestations).
+  - Strong anti‑fraud procedures for issuing national IDs and digital IDs.
+- **Biometric template protection:**
+  - Store **non‑reversible, encrypted templates**, not raw face images.
+  - Segregate biometric data from full personal records; access requires strict legal triggers.
+- **Identity boundary controls:**
+  - Define clear boundaries between:
+    - Government credentials  
+    - Platform identities  
+    - AI‑generated or synthetic personas  
+  - Use attestation stacks and trust graphs to distinguish genuine human identities from synthetic or cloned ones.   [api.emergentmind.com](https://api.emergentmind.com/topics/ai-identity-boundaries)  [arXiv.org](https://arxiv.org/pdf/2508.01997v1)
+
+### 3.2 Sensor and FRT layer
+
+**Goal:** Prevent cameras from becoming a default surveillance grid.
+
+- **No default linkage to ID registries:**
+  - Public CCTV and FRT systems are **not** continuously connected to national ID databases.
+- **Case‑based activation:**
+  - FRT queries must be:
+    - Tied to a specific case or warrant.
+    - Time‑bounded and location‑bounded.
+    - Logged with requester, legal basis, and scope.
+- **Limited retention:**
+  - Video and FRT logs are retained only as long as necessary for the defined purpose.
+  - Automatic deletion schedules; no indefinite archives.
+
+### 3.3 Analytics and fraud‑detection layer
+
+**Goal:** Detect stolen and synthetic IDs through **data‑consistency analysis**, not mass facial scanning.
+
+- **Behavioral and data‑consistency checks:**
+  - Detect synthetic or stolen IDs by:
+    - Inconsistent address histories.
+    - Implausible employment or income patterns.
+    - Multiple identities sharing devices, locations, or behavioral signatures.
+    - Document anomalies (layout, fonts, security features) detected by specialized algorithms.   [ScienceDirect](https://www.sciencedirect.com/science/article/pii/S1566253525010310)
+- **Privacy‑preserving matching:**
+  - Use cryptographic or privacy‑aware methods to:
+    - Confirm “same person” across systems.
+    - Flag “identity anomaly” without exposing full identity to every subsystem.
+- **Risk scoring with safeguards:**
+  - Identity‑fraud risk scores are:
+    - Used as **investigative leads**, not automatic denial of rights.
+    - Subject to human review and due process.
+
+### 3.4 Service and control layer
+
+**Goal:** Ensure that identity and FRT systems serve people, not dominate them.
+
+- **Positive use cases:**
+  - Secure access to welfare, healthcare, education, and financial services.
+  - Fraud reduction in benefits and payments.
+- **Strict limits on coercive use:**
+  - No use for:
+    - Political surveillance.
+    - Targeting lawful protest or dissent.
+    - Broad social‑credit scoring.
+- **User‑centric controls:**
+  - Individuals can:
+    - See where and how their identity is used.
+    - Set preferences where possible (e.g., opt‑out of non‑essential FRT uses).
+    - Request additional protections if they are victims of identity theft.
+
+---
+
+## 4. Threat model: criminals using stolen or synthetic IDs
+
+We explicitly model the adversary you care about: **criminals who manipulate identity systems**.
+
+### 4.1 Stolen identity scenario
+
+- Criminal acquires full identity data (name, DOB, ID number, biometric images).
+- Uses it to:
+  - Open accounts.
+  - Cross borders.
+  - Commit fraud or organize crime.
+
+**Framework response:**
+
+- **Strong enrollment and re‑verification:**
+  - High‑risk actions (large transfers, cross‑border movements) trigger **step‑up verification**:
+    - Additional biometrics.
+    - Out‑of‑band checks (trusted contacts, prior behavior).
+- **Fraud‑analytics:**
+  - Detect anomalies in usage patterns:
+    - Sudden geographic jumps.
+    - Uncharacteristic transactions.
+    - Device and network mismatches.
+- **Victim protections:**
+  - Once identity theft is suspected:
+    - Flag the identity.
+    - Provide the victim with enhanced protections and alternative credentials.
+
+### 4.2 Synthetic identity scenario
+
+- Criminal constructs a synthetic identity using:
+  - Real SSN or ID number (often of minors or deceased persons).
+  - Fabricated name, address, employment, and history.
+- Inserts or manipulates data in official or quasi‑official systems to make it appear legitimate.
+
+**Framework response:**
+
+- **Data‑consistency checks:**
+  - Cross‑check identity data across:
+    - Civil registries.
+    - Tax records.
+    - Education/employment databases.
+    - Telecom and financial systems.
+  - Look for:
+    - Missing or implausible life events.
+    - Contradictory records.
+    - Overlapping identifiers across multiple “persons”.
+- **Document authenticity algorithms:**
+  - Use privacy‑aware fake‑document detection (e.g., FakeIDet‑style methods) to spot forged or manipulated IDs without exposing full personal data.   [ScienceDirect](https://www.sciencedirect.com/science/article/pii/S1566253525010310)
+- **Synthetic identity risk flags:**
+  - Flag identities with high synthetic‑risk scores for:
+    - Targeted investigation.
+    - Additional verification steps.
+  - Ensure flags **do not automatically criminalize** the person; they trigger **review**, not punishment.
+
+### 4.3 FRT’s role in this threat model
+
+FRT is **not** used to scan everyone to find synthetic IDs. Instead:
+
+- **Targeted FRT checks:**
+  - When a specific identity is under investigation for fraud:
+    - FRT can be used to confirm whether the same face appears under multiple identities.
+    - FRT can help detect impersonation (someone using another person’s ID).
+- **Cross‑identity facial consistency:**
+  - Privacy‑preserving facial matching can detect:
+    - One face linked to many IDs.
+    - Many faces linked to one ID.
+  - These patterns are treated as **fraud indicators**, not automatic guilt.
+
+---
+
+## 5. Governance, oversight, and anti‑abuse mechanisms
+
+To prevent an “Outside Group” or rogue actor from weaponizing the system, governance must be **hard‑coded**.
+
+### 5.1 Independent oversight bodies
+
+- Mandated institutions with:
+  - Power to audit FRT and ID systems.
+  - Authority to halt deployments.
+  - Ability to sanction agencies and vendors.
+
+### 5.2 Transparency and logging
+
+- Every FRT query and identity‑fraud investigation:
+  - Logged with:
+    - Who requested it.
+    - Legal basis.
+    - Time, scope, and data accessed.
+- Aggregate statistics:
+  - Published regularly (e.g., annual reports).
+  - Include:
+    - Number of FRT uses.
+    - Types of cases.
+    - Outcomes and error rates.
+
+### 5.3 Vendor and private‑sector controls
+
+- Strict rules for:
+  - Private FRT deployments tied to national IDs.
+  - Data brokering of biometric or identity data.
+- Require:
+  - Security and rights‑impact assessments.
+  - Compliance with the planetary framework.
+
+### 5.4 Red‑team and abuse simulations
+
+- Regular exercises to simulate:
+  - Coercive informant ecosystems.
+  - Synthetic identity networks.
+  - Rogue surveillance scenarios.
+- Use findings to:
+  - Strengthen legal safeguards.
+  - Adjust technical controls.
+  - Update oversight practices.
+
+---
+
+## 6. Known issues, drawbacks, and how we address them
+
+### 6.1 Risk of function creep
+
+**Problem:** Systems built for “serious crime” slowly expand to everyday policing or social control.
+
+**Mitigation:**
+
+- Hard legal limits on permissible purposes.
+- Mandatory legislative process for any expansion.
+- Oversight bodies can veto expansions that violate rights principles.
+
+### 6.2 Bias and unequal impact
+
+**Problem:** FRT and fraud‑analytics may disproportionately target certain groups.
+
+**Mitigation:**
+
+- Continuous bias audits.
+- Public reporting of error rates by demographic.
+- Corrective measures:
+  - Algorithm retraining.
+  - Deployment limits.
+  - Human review requirements.
+
+Synthetic datasets and controlled generation can help mitigate bias in training data, but must be governed to avoid new forms of identity leakage or misrepresentation.   [arXiv.org](https://arxiv.org/abs/2510.17372)
+
+### 6.3 Over‑reliance on automated risk scores
+
+**Problem:** Identity‑fraud scores or FRT hits become de facto verdicts.
+
+**Mitigation:**
+
+- Explicit rule: **No automated guilt**.
+- Scores and hits are **leads**, not decisions.
+- Human review, corroborating evidence, and due process are mandatory.
+
+### 6.4 Cross‑border data sharing
+
+**Problem:** Identity and FRT data shared across borders can escape local protections.
+
+**Mitigation:**
+
+- International agreements that:
+  - Bind data sharing to rights standards.
+  - Prohibit use for political repression or discrimination.
+- Shared oversight mechanisms for cross‑border systems.
+
+---
+
+## 7. Path to code and schema codification
+
+Once this conceptual framework is stable, we can translate it into:
+
+### 7.1 Policy and governance schemas
+
+- **JSON/YAML schemas** for:
+  - FRT use‑case declarations (purpose, scope, legal basis).
+  - Identity‑fraud investigation requests.
+  - Oversight logs and audit trails.
+- These schemas enforce:
+  - Purpose limitation.
+  - Logging requirements.
+  - Access controls.
+
+### 7.2 Technical reference architecture
+
+- **Service boundaries:**
+  - Separate microservices for:
+    - Enrollment and ID management.
+    - FRT matching.
+    - Fraud‑analytics.
+    - Logging and oversight.
+- **Access control layers:**
+  - Role‑based and attribute‑based access control.
+  - Policy engines that enforce:
+    - Case‑based activation.
+    - Legal thresholds.
+    - Privacy‑preserving matching.
+
+### 7.3 Identity and fraud‑analytics models
+
+- **Data models** for:
+  - Identity records (with provenance and trust scores).
+  - Fraud‑risk indicators (consistency metrics, document authenticity scores).
+  - FRT match events (with confidence, context, and review status).
+
+---
+
+Addtionally the JSON/relational schemas for:
+  - Identity records.
+  - FRT events.
+  - Fraud‑risk indicators.
+  - Oversight logs.
+
+Reference implementation- (e.g., microservice architecture, API contracts) that embodies this planetary rights framework in code.
