@@ -1,0 +1,266 @@
+Full relational ER diagram for the planetary‑scale identity system which includes **biometric modalities**, **fraud‑analytics**, **FRT events**, **governance**, and **auditability**. A complete, logically‑normalized ER model that can be directly translated into SQL, ORM models, or graph‑database equivalents.
+
+Below is **diagram**, then the **entity groups**, then the **relationships**, and finally the **cross‑system flows**.
+
+---
+
+# 🌐 Planetary Identity System — Full Relational ER Diagram
+
+
+
+
+
+```
+┌──────────────────────────┐
+│      identity_record      │
+│ PK identity_id            │
+│ national_id_number        │
+│ full_name                 │
+│ date_of_birth             │
+│ identity_status           │
+└─────────────┬────────────┘
+              │ 1:N
+              ▼
+┌──────────────────────────┐
+│   identity_provenance     │
+│ PK provenance_id          │
+│ FK identity_id            │
+│ source_system             │
+│ verified                  │
+└──────────────────────────┘
+
+              │ 1:N
+              ▼
+┌──────────────────────────┐
+│ biometric_capture_event   │
+│ PK capture_event_id       │
+│ FK identity_id            │
+│ capture_location          │
+│ capture_device            │
+│ operator_id               │
+│ capture_time              │
+└─────────────┬────────────┘
+              │ 1:N
+              ▼
+┌──────────────────────────┐
+│    biometric_template     │
+│ PK template_id            │
+│ FK identity_id            │
+│ modality                  │
+│ template_hash             │
+│ encryption_scheme         │
+│ FK capture_event_id       │
+│ revoked                   │
+└─────────────┬───────────────────────────────────────────────┬───────────────┬───────────────┘
+              │ 1:1                                            │ 1:1           │ 1:1
+              ▼                                                ▼               ▼
+   ┌──────────────────┐   ┌────────────────────┐   ┌──────────────────┐   ┌──────────────────┐
+   │   face_template   │   │ fingerprint_template│   │  iris_template   │   │ retina_template  │
+   │ PK template_id    │   │ PK template_id      │   │ PK template_id   │   │ PK template_id   │
+   └──────────────────┘   └────────────────────┘   └──────────────────┘   └──────────────────┘
+
+              │ 1:N
+              ▼
+┌──────────────────────────┐
+│ biometric_revocation_record│
+│ PK revocation_id          │
+│ FK template_id            │
+│ revocation_reason         │
+│ revoked_at                │
+└──────────────────────────┘
+
+──────────────────────────────────────────────────────────────────────────────
+
+┌──────────────────────────┐
+│        frt_query         │
+│ PK frt_query_id          │
+│ requester_id             │
+│ legal_basis              │
+│ purpose                  │
+│ location                 │
+│ time_window_start        │
+│ time_window_end          │
+└─────────────┬────────────┘
+              │ 1:N
+              ▼
+┌──────────────────────────┐
+│     frt_match_event       │
+│ PK match_event_id         │
+│ FK frt_query_id           │
+│ FK template_id            │
+│ FK identity_id            │
+│ match_confidence          │
+│ review_status             │
+└──────────────────────────┘
+
+──────────────────────────────────────────────────────────────────────────────
+
+┌──────────────────────────┐
+│       fraud_signal        │
+│ PK signal_id              │
+│ FK identity_id            │
+│ signal_type               │
+│ severity                  │
+│ detected_at               │
+└─────────────┬────────────┘
+              │ 1:N
+              ▼
+┌──────────────────────────┐
+│    identity_risk_score    │
+│ PK risk_score_id          │
+│ FK identity_id            │
+│ score_value               │
+│ score_type                │
+│ computed_at               │
+└──────────────────────────┘
+
+              │ N:M
+              ▼
+┌──────────────────────────┐
+│        fraud_case         │
+│ PK case_id                │
+│ opened_by                 │
+│ status                    │
+│ primary_identity_id       │
+└─────────────┬────────────┘
+              │
+              ├── fraud_case_identity (N:M identities)
+              └── fraud_case_signal  (N:M signals)
+
+──────────────────────────────────────────────────────────────────────────────
+
+┌──────────────────────────┐
+│      consent_record       │
+│ PK consent_id             │
+│ FK identity_id            │
+│ consent_type              │
+│ granted                   │
+└──────────────────────────┘
+
+┌──────────────────────────┐
+│       access_policy       │
+│ PK policy_id              │
+│ name                      │
+│ active                    │
+└─────────────┬────────────┘
+              ├── access_policy_role
+              └── access_policy_purpose
+
+┌──────────────────────────┐
+│     audit_log_entry       │
+│ PK log_id                 │
+│ actor_id                  │
+│ action_type               │
+│ target_id                 │
+│ FK policy_id              │
+│ timestamp                 │
+└──────────────────────────┘
+```
+
+---
+
+# 🔍 Entity Group Breakdown
+
+## 1. **Identity Core**
+- identity_record  
+- identity_provenance  
+- consent_record  
+
+These define the **legal identity**, its **origin**, and **user rights**.
+
+---
+
+## 2. **Biometric Layer**
+- biometric_capture_event  
+- biometric_template  
+- face_template  
+- fingerprint_template  
+- iris_template  
+- retina_template  
+- biometric_revocation_record  
+
+This is the **multi‑modal biometric spine** of the system.
+
+---
+
+## 3. **FRT Layer**
+- frt_query  
+- frt_match_event  
+
+This governs **authorized**, **logged**, **purpose‑limited** facial recognition usage.
+
+---
+
+## 4. **Fraud & Synthetic Identity Analytics**
+- fraud_signal  
+- identity_risk_score  
+- fraud_case  
+- fraud_case_identity  
+- fraud_case_signal  
+
+This is the **fraud‑detection engine**, identifying:
+- stolen identities  
+- synthetic identities  
+- multi‑ID/single‑face anomalies  
+- single‑ID/multi‑face anomalies  
+
+---
+
+## 5. **Governance & Oversight**
+- access_policy  
+- access_policy_role  
+- access_policy_purpose  
+- audit_log_entry  
+
+This enforces:
+- legality  
+- accountability  
+- transparency  
+- anti‑abuse protections  
+
+---
+
+# 🔗 Relationship Summary
+
+### Identity ↔ Biometrics
+- One identity → many biometric capture events  
+- One capture event → many biometric templates  
+- One template → one modality‑specific template  
+
+### Identity ↔ Fraud Analytics
+- One identity → many fraud signals  
+- One identity → many risk scores  
+- Many identities ↔ many fraud cases  
+
+### Identity ↔ FRT
+- FRT match events link identity + template + query  
+
+### Governance
+- Every action → audit_log_entry  
+- Every audit_log_entry → access_policy  
+
+---
+
+# 🧠 Cross‑System Flow (How the whole system behaves)
+
+### 1. Enrollment
+IdentityRecord → CaptureEvent → BiometricTemplate → ModalityTemplate
+
+### 2. FRT Use
+FRTQuery → FRTMatchEvent → AuditLogEntry
+
+### 3. Fraud Detection
+FraudSignal → IdentityRiskScore → FraudCase → AuditLogEntry
+
+### 4. Governance
+AccessPolicy → AuditLogEntry → Enforcement
+
+---
+
+# Also Available:
+
+-SQL DDL for all tables
+-API contracts for each entity
+-A full microservice architecture diagram 
+-Fraud‑detection pipeline pseudocode
+-Zero‑knowledge biometric‑matching design
