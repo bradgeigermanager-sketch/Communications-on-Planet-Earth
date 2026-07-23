@@ -1,0 +1,343 @@
+### 1. Overall PLONK/Halo2 arithmetization for these circuits
+
+We’ll treat each proof type as a separate circuit (or chip), all using the same PLONKish model:
+
+- **Column types**
+  - **Advice columns:** private witness values (embeddings, thresholds, features).
+  - **Fixed columns:** constants (e.g., weights, max bounds, selector patterns).
+  - **Instance columns:** public inputs (hashes, thresholds, rule set hashes).
+
+- **Core components**
+  - **Gates:** polynomial constraints enforcing distances, thresholds, commitments.
+  - **Selectors:** enable gates on specific rows.
+  - **Equality constraints:** link cells across rows/columns (e.g., hash outputs to instance inputs).
+  - **Lookups:** optional, for bounded ranges or precomputed tables (e.g., norm bounds).
+
+The definition of each circuit in terms of **columns**, **gates**, and **constraints**.
+
+---
+
+## 2. SAME_FACE_ACROSS_IDS circuit
+
+### 2.1 Columns
+
+- **Advice**
+  - `a_probe[k]` — embedding coordinates of probe face, across rows or packed in columns.
+  - `a_id_j_k` — embedding coordinates for identity \(j\), coordinate \(k\).
+  - `a_diff_j_k` — \(E_probe[k] - E_j[k]\).
+  - `a_sqdiff_j_k` — \((E_probe[k] - E_j[k])^2\).
+  - `a_D_j` — accumulated distance for identity \(j\).
+
+- **Fixed**
+  - `f_selector_dist` — enables distance gate.
+  - `f_selector_accum` — enables accumulation gate.
+  - `f_max_embed` — bound for embedding coordinates.
+
+- **Instance**
+  - `i_template_ref_hash` — public hash of probe template reference.
+  - `i_identity_ref_hashes[j]` — public hashes of identity references.
+  - `i_threshold_T` — public match threshold.
+
+### 2.2 Gates and constraints
+
+**Gate 1: Embedding bounds**
+
+Enabled on rows where embeddings are assigned.
+
+- For each coordinate cell `a_probe[k]` and `a_id_j_k`:
+  \[
+  a\_probe[k] \cdot (a\_probe[k] - f\_max\_embed) = 0 \quad \text{(or via lookup/range check)}
+  \]
+  Similar for `a_id_j_k`. In practice, Halo2 uses range‑check gadgets rather than direct polynomial bounds; conceptually, we enforce \(|E[k]| \leq \text{MAX\_EMBED}\).
+
+**Gate 2: Difference and square**
+
+For each \(j,k\), with selector `f_selector_dist`:
+
+- Difference:
+  \[
+  a\_diff\_{j,k} = a\_probe[k] - a\_id\_{j,k}
+  \]
+  Implemented as:
+  \[
+  a\_diff\_{j,k} - a\_probe[k] + a\_id\_{j,k} = 0
+  \]
+
+- Square:
+  \[
+  a\_sqdiff\_{j,k} = a\_diff\_{j,k}^2
+  \]
+  Implemented as:
+  \[
+  a\_sqdiff\_{j,k} - a\_diff\_{j,k} \cdot a\_diff\_{j,k} = 0
+  \]
+
+**Gate 3: Distance accumulation**
+
+For each identity \(j\), we sum over \(k\). In Halo2, this is usually done across rows with a running accumulator:
+
+- Let `a_D_j_row` be the accumulator at row r, and `a_D_j_next` at row r+1.
+- Gate:
+  \[
+  a\_D\_j\_{\text{next}} = a\_D\_j\_{\text{row}} + a\_sqdiff\_{j,k}
+  \]
+  Implemented as:
+  \[
+  a\_D\_j\_{\text{next}} - a\_D\_j\_{\text{row}} - a\_sqdiff\_{j,k} = 0
+  \]
+
+At the final row for identity \(j\), `a_D_j_final` holds \(\sum_k (E\_probe[k] - E\_j[k])^2\).
+
+**Gate 4: Threshold check**
+
+At the final row for each identity \(j\):
+
+- Constraint:
+  \[
+  a\_D\_j\_{\text{final}} \leq i\_threshold\_T
+  \]
+  In PLONKish form, we encode this via range‑check or a gadget that proves:
+  \[
+  a\_D\_j\_{\text{final}} = i\_threshold\_T - r\_j
+  \]
+  with `r_j` constrained to be non‑negative and within a range (lookup table).
+
+**Gate 5: Commitment consistency**
+
+We don’t hash inside the circuit; instead, we treat `hash(E_probe)` and `hash(E_j)` as external commitments. The circuit enforces equality between:
+
+- Instance cell `i_template_ref_hash` and a committed value derived from `a_probe[k]` (via equality constraints to a pre‑hashed witness).
+- Similarly for `i_identity_ref_hashes[j]`.
+
+In Halo2, this is done with **instance columns** and equality constraints linking them to advice cells that hold the committed hash.
+
+---
+
+## 3. MULTI_FACE_FOR_ID circuit
+
+### 3.1 Columns
+
+- **Advice**
+  - `a_E_a[k]`, `a_E_b[k]` — two embeddings for same identity.
+  - `a_diff_ab_k` — \(E_a[k] - E_b[k]\).
+  - `a_sqdiff_ab_k` — \((E_a[k] - E_b[k])^2\).
+  - `a_D_ab` — accumulated distance.
+
+- **Fixed**
+  - `f_selector_dist_ab`, `f_selector_accum_ab`.
+  - `f_max_embed`.
+
+- **Instance**
+  - `i_identity_ref_hash`.
+  - `i_template_ref_hashes[0]`, `i_template_ref_hashes[1]`.
+  - `i_nonmatch_threshold`.
+
+### 3.2 Gates and constraints
+
+**Gate 1: Embedding bounds**
+
+Same pattern as before for `a_E_a[k]`, `a_E_b[k]`.
+
+**Gate 2: Difference and square**
+
+For each coordinate \(k\):
+
+- Difference:
+  \[
+  a\_diff\_{ab,k} - a\_E\_a[k] + a\_E\_b[k] = 0
+  \]
+- Square:
+  \[
+  a\_sqdiff\_{ab,k} - a\_diff\_{ab,k}^2 = 0
+  \]
+
+**Gate 3: Distance accumulation**
+
+Across rows:
+
+- \[
+  a\_D\_{ab,\text{next}} - a\_D\_{ab,\text{row}} - a\_sqdiff\_{ab,k} = 0
+  \]
+
+Final row holds \(D_{ab} = \sum_k (E_a[k] - E_b[k])^2\).
+
+**Gate 4: Non‑match threshold**
+
+At final row:
+
+- \[
+  a\_D\_{ab,\text{final}} \geq i\_nonmatch\_threshold
+  \]
+  Encoded via:
+  \[
+  a\_D\_{ab,\text{final}} = i\_nonmatch\_threshold + s
+  \]
+  with `s` constrained to be non‑negative and range‑checked.
+
+**Gate 5: Distinctness**
+
+We need to ensure \(E_a \neq E_b\). A simple gadget:
+
+- Pick one coordinate index \(k_0\) (fixed).
+- Enforce:
+  \[
+  a\_E\_a[k\_0] - a\_E\_b[k\_0] \neq 0
+  \]
+  In PLONKish circuits, non‑zero is enforced via a **lookup** or an inverse gadget:
+  - Introduce `inv_diff` such that:
+    \[
+    (a\_E\_a[k\_0] - a\_E\_b[k\_0]) \cdot inv\_diff = 1
+    \]
+  - This is only satisfiable if the difference is non‑zero.
+
+**Gate 6: Commitment consistency**
+
+Same pattern: instance hashes for identity and templates are linked via equality constraints to advice cells holding pre‑hashed values.
+
+---
+
+## 4. CONSISTENT_IDENTITY_GRAPH circuit
+
+### 4.1 Columns
+
+- **Advice**
+  - `a_birth_date`, `a_birth_location`.
+  - `a_addr_start[i]`, `a_addr_end[i]`.
+  - `a_emp_start[i]`, `a_emp_end[i]`.
+  - `a_travel_dep_time[i]`, `a_travel_arr_time[i]`.
+  - `a_travel_distance[i]`, `a_travel_speed[i]`, `a_travel_duration[i]`.
+
+- **Fixed**
+  - `f_selector_addr`, `f_selector_emp`, `f_selector_travel`.
+  - Constants for max speeds, etc.
+
+- **Instance**
+  - `i_identity_ref_hash`.
+  - `i_rule_set_hash`.
+
+### 4.2 Gates and constraints
+
+**Gate 1: Birth record validity**
+
+- \[
+  a\_birth\_date \leq \text{NOW}
+  \]
+  via range‑check against a fixed column encoding NOW.
+- Non‑null location enforced via lookup (location code in allowed table).
+
+**Gate 2: Address timeline**
+
+For each address interval row:
+
+- \[
+  a\_addr\_start[i] \leq a\_addr\_end[i]
+  \]
+- For consecutive addresses:
+  \[
+  a\_addr\_end[i] \leq a\_addr\_start[i+1]
+  \]
+  Implemented with rotated cells (current row vs next row) in Halo2.
+
+**Gate 3: Employment timeline**
+
+Similar:
+
+- \[
+  a\_emp\_start[i] \leq a\_emp\_end[i]
+  \]
+
+**Gate 4: Travel feasibility**
+
+For each travel event:
+
+- Time ordering:
+  \[
+  a\_travel\_arr\_time[i] \geq a\_travel\_dep\_time[i]
+  \]
+- Speed constraint:
+  \[
+  a\_travel\_distance[i] \leq a\_travel\_speed[i] \cdot a\_travel\_duration[i]
+  \]
+  Implemented as:
+  \[
+  a\_travel\_distance[i] - a\_travel\_speed[i] \cdot a\_travel\_duration[i] \leq 0
+  \]
+  Again via range‑check gadget: represent the difference as a non‑negative bounded value.
+
+**Gate 5: Rule set commitment**
+
+- Advice cell `a_rule_set_hash` equals instance `i_rule_set_hash` via equality constraint.
+
+---
+
+## 5. DOCUMENT_AUTH_PROOF circuit
+
+### 5.1 Columns
+
+- **Advice**
+  - `a_feature[k]` — document features.
+  - `a_weight[k]` — detector weights (could be fixed).
+  - `a_partial_sum[k]` — running sum.
+  - `a_auth_score` — final authenticity score.
+
+- **Fixed**
+  - `f_selector_sum`.
+  - `f_max_feature`.
+
+- **Instance**
+  - `i_document_ref_hash`.
+  - `i_min_auth_threshold`.
+
+### 5.2 Gates and constraints
+
+**Gate 1: Feature bounds**
+
+- Range‑check `a_feature[k]` against `f_max_feature`.
+
+**Gate 2: Weighted sum**
+
+Across rows:
+
+- \[
+  a\_partial\_sum[k+1] = a\_partial\_sum[k] + a\_feature[k] \cdot a\_weight[k]
+  \]
+  Gate:
+  \[
+  a\_partial\_sum[k+1] - a\_partial\_sum[k] - a\_feature[k] \cdot a\_weight[k] = 0
+  \]
+
+Final row:
+
+- \[
+  a\_auth\_score = a\_partial\_sum[\text{last}]
+  \]
+
+**Gate 3: Threshold**
+
+- \[
+  a\_auth\_score \geq i\_min\_auth\_threshold
+  \]
+  Encoded via:
+  \[
+  a\_auth\_score = i\_min\_auth\_threshold + s
+  \]
+  with `s` non‑negative and range‑checked.
+
+**Gate 4: Commitment consistency**
+
+- Equality constraint between instance `i_document_ref_hash` and advice cell holding hash of `a_feature[k]`.
+
+---
+
+## 6. Halo2/Plonk implementation notes
+
+- Each of these circuits would be implemented as a **chip** with:
+  - A `Config` struct holding column definitions and selectors.
+  - A `configure()` method registering gates and lookups with `ConstraintSystem`.
+  - A `synthesize()` method assigning witness values to advice columns and enabling selectors row‑by‑row.
+
+- **Distance computations** are naturally expressed as custom gates or small gadgets to keep constraint degree low (typically quadratic).
+
+- **Threshold checks** rely on range‑check gadgets and lookup tables rather than direct inequalities.
+
+- **Commitment consistency** is handled via instance columns and equality constraints, not in‑circuit hashing.
