@@ -1,0 +1,286 @@
+Biometric‑modality families as first‑class, rights‑anchored entities.
+
+---
+
+# 🌐 Multi‑Modal Biometric Schema Expansion  
+*(Facial, Fingerprint, Iris, Retina)*
+
+To keep this system coherent, we treat each biometric as a **modality‑specific template** under a shared parent structure. This ensures:
+
+- Consistent governance  
+- Consistent auditability  
+- Consistent privacy protections  
+- Consistent fraud‑detection integration  
+
+Below is the expanded checklist.
+
+---
+
+## ✔️ Biometric Schema Checklist (Expanded)
+
+- **BiometricTemplate** — parent object  
+- **FaceTemplate** — facial recognition template  
+- **FingerprintTemplate** — fingerprint minutiae template  
+- **IrisTemplate** — iris code template  
+- **RetinaTemplate** — retinal vascular pattern template  
+- **BiometricCaptureEvent** — metadata for how/when biometrics were captured  
+- **BiometricRevocationRecord** — revocation, replacement, compromise tracking  
+
+Each modality inherits from the parent **BiometricTemplate** structure.
+
+---
+
+# 🧬 1. Parent Schema: BiometricTemplate
+
+This is the universal structure all modalities extend.
+
+```json
+{
+  "$id": "BiometricTemplate",
+  "type": "object",
+  "properties": {
+    "template_id": { "type": "string" },
+    "identity_id": { "type": "string" },
+    "modality": {
+      "type": "string",
+      "enum": ["face", "fingerprint", "iris", "retina"]
+    },
+    "template_hash": { "type": "string" },
+    "encryption_scheme": { "type": "string" },
+    "capture_event_id": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "revoked": { "type": "boolean" }
+  },
+  "required": ["template_id", "identity_id", "modality", "template_hash"]
+}
+```
+
+---
+
+# 👤 2. FaceTemplate (Facial Recognition)
+
+
+
+
+
+```json
+{
+  "$id": "FaceTemplate",
+  "type": "object",
+  "allOf": [{ "$ref": "BiometricTemplate" }],
+  "properties": {
+    "landmark_vector": { "type": "string" },
+    "embedding_vector": { "type": "string" },
+    "model_version": { "type": "string" }
+  }
+}
+```
+
+**Relational extension:**
+
+- face_template  
+  - template_id (PK → biometric_template)  
+  - landmark_vector  
+  - embedding_vector  
+  - model_version  
+
+---
+
+# 🖐️ 3. FingerprintTemplate
+
+
+
+
+
+Fingerprint templates rely on **minutiae maps** (ridge endings, bifurcations).
+
+```json
+{
+  "$id": "FingerprintTemplate",
+  "type": "object",
+  "allOf": [{ "$ref": "BiometricTemplate" }],
+  "properties": {
+    "minutiae_map": { "type": "string" },
+    "ridge_flow_hash": { "type": "string" },
+    "sensor_type": { "type": "string" },
+    "finger_position": {
+      "type": "string",
+      "enum": [
+        "left_thumb", "left_index", "left_middle", "left_ring", "left_little",
+        "right_thumb", "right_index", "right_middle", "right_ring", "right_little"
+      ]
+    }
+  }
+}
+```
+
+**Relational extension:**
+
+- fingerprint_template  
+  - template_id (PK)  
+  - minutiae_map  
+  - ridge_flow_hash  
+  - sensor_type  
+  - finger_position  
+
+---
+
+# 👁️ 4. IrisTemplate
+
+
+
+
+
+Iris templates use **iris codes** (phase‑quantized Gabor wavelet features).
+
+```json
+{
+  "$id": "IrisTemplate",
+  "type": "object",
+  "allOf": [{ "$ref": "BiometricTemplate" }],
+  "properties": {
+    "iris_code": { "type": "string" },
+    "pupil_radius": { "type": "number" },
+    "iris_radius": { "type": "number" },
+    "capture_wavelength": { "type": "number" }
+  }
+}
+```
+
+**Relational extension:**
+
+- iris_template  
+  - template_id (PK)  
+  - iris_code  
+  - pupil_radius  
+  - iris_radius  
+  - capture_wavelength  
+
+---
+
+# 🔬 5. RetinaTemplate
+
+
+
+
+
+Retina templates encode **vascular pattern graphs**.
+
+```json
+{
+  "$id": "RetinaTemplate",
+  "type": "object",
+  "allOf": [{ "$ref": "BiometricTemplate" }],
+  "properties": {
+    "vascular_graph_hash": { "type": "string" },
+    "capture_resolution": { "type": "string" },
+    "sensor_model": { "type": "string" }
+  }
+}
+```
+
+**Relational extension:**
+
+- retina_template  
+  - template_id (PK)  
+  - vascular_graph_hash  
+  - capture_resolution  
+  - sensor_model  
+
+---
+
+# 📸 6. BiometricCaptureEvent
+
+
+
+
+
+Tracks how/when/where biometrics were collected.
+
+```json
+{
+  "$id": "BiometricCaptureEvent",
+  "type": "object",
+  "properties": {
+    "capture_event_id": { "type": "string" },
+    "identity_id": { "type": "string" },
+    "capture_location": { "type": "string" },
+    "capture_device": { "type": "string" },
+    "operator_id": { "type": "string" },
+    "capture_time": { "type": "string", "format": "date-time" },
+    "quality_score": { "type": "number", "minimum": 0, "maximum": 1 }
+  },
+  "required": ["capture_event_id", "identity_id", "capture_time"]
+}
+```
+
+**Relational:**
+
+- biometric_capture_event  
+  - capture_event_id (PK)  
+  - identity_id  
+  - capture_location  
+  - capture_device  
+  - operator_id  
+  - capture_time  
+  - quality_score  
+
+---
+
+# 🛡️ 7. BiometricRevocationRecord
+
+
+
+
+
+Tracks compromised or replaced biometrics.
+
+```json
+{
+  "$id": "BiometricRevocationRecord",
+  "type": "object",
+  "properties": {
+    "revocation_id": { "type": "string" },
+    "template_id": { "type": "string" },
+    "revocation_reason": {
+      "type": "string",
+      "enum": ["compromised", "replaced", "legal_request", "quality_issue"]
+    },
+    "revoked_at": { "type": "string", "format": "date-time" },
+    "operator_id": { "type": "string" }
+  },
+  "required": ["revocation_id", "template_id", "revocation_reason", "revoked_at"]
+}
+```
+
+**Relational:**
+
+- biometric_revocation_record  
+  - revocation_id (PK)  
+  - template_id (FK → biometric_template)  
+  - revocation_reason  
+  - revoked_at  
+  - operator_id  
+
+---
+
+# 🧩 How these schemas integrate with fraud detection
+
+Each biometric modality contributes to:
+
+- **Multi‑ID / single‑face detection**  
+- **Single‑ID / multi‑face detection**  
+- **Synthetic identity detection**  
+- **Stolen identity detection**  
+- **Cross‑modality consistency checks**  
+
+This is where the **FraudSignal**, **IdentityRiskScore**, and **FraudCase** schemas plug in.
+
+---
+
+# Also available:
+
+-API contracts for biometric enrollment, revocation, and matching  
+-relational ER diagram for the entire identity system  
+-fraud‑detection pipeline pseudocode integrating all modalities  
+-governance and audit enforcement logic
