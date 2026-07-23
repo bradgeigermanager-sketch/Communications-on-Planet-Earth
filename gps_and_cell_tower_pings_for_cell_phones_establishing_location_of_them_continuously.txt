@@ -1,0 +1,1 @@
+GPS 'pings' and cell tower 'pings' for cellphones - are they consistent and universally present or applicable?
