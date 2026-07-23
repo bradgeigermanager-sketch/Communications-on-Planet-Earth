@@ -1,0 +1,248 @@
+The fraud‑detection DAG becomes *cryptographically enforceable*: the enclave proves biometric relationships **without ever revealing biometrics**.
+
+Below are the full constraint systems (the “circuits”) for:
+
+- **SAME_FACE_ACROSS_IDS**  
+- **MULTI_FACE_FOR_ID**  
+- **CONSISTENT_IDENTITY_GRAPH**  
+- **DOCUMENT_AUTH_PROOF**  
+
+Each circuit is written in a way that can be implemented in **Plonk**, **Groth16**, **Halo2**, or **STARK** systems.
+
+---
+
+## SAME_FACE_ACROSS_IDS  
+*(One face matches N identities above threshold T)*
+
+### Core idea  
+Inside the enclave, we compute face embeddings for each identity and prove:
+
+> The distance between the probe embedding and each identity embedding is ≤ T  
+> without revealing any embeddings.
+
+### Circuit constraints
+
+**Inputs (private):**
+- `E_probe` — embedding vector of the probe face  
+- `E_i[]` — embedding vectors for identities i = 1..N  
+- `T` — match threshold  
+- `hash(E_probe)` and `hash(E_i[])` — commitments
+
+**Public inputs:**
+- `template_ref_hash`  
+- `identity_ref_hashes[]`  
+- `T`
+
+### Constraints
+
+1. **Embedding commitments**
+   ```
+   hash(E_probe) == template_ref_hash
+   hash(E_i[j]) == identity_ref_hashes[j]
+   ```
+
+2. **Distance computation**  
+   For each identity j:
+   ```
+   D_j = Σ_k (E_probe[k] - E_i[j][k])^2
+   ```
+
+3. **Threshold constraint**
+   ```
+   D_j <= T   for all j in 1..N
+   ```
+
+4. **Non‑negativity**
+   ```
+   D_j >= 0
+   ```
+
+5. **Soundness constraint**  
+   The circuit must enforce that embeddings are valid dimension‑bounded vectors:
+   ```
+   |E_probe[k]| <= MAX_EMBED
+   |E_i[j][k]| <= MAX_EMBED
+   ```
+
+### Output  
+A ZK proof that all distances are ≤ T.
+
+---
+
+## MULTI_FACE_FOR_ID  
+*(One identity has ≥2 distinct faces that do NOT match each other)*
+
+### Core idea  
+Inside the enclave, we prove:
+
+> For identity X, at least two face embeddings differ by more than threshold T.
+
+### Circuit constraints
+
+**Inputs (private):**
+- `E_a`, `E_b` — two embeddings for the same identity  
+- `T_nonmatch` — non‑match threshold  
+- `hash(E_a)`, `hash(E_b)` — commitments
+
+**Public inputs:**
+- `identity_ref_hash`  
+- `template_ref_hashes[]`  
+- `T_nonmatch`
+
+### Constraints
+
+1. **Embedding commitments**
+   ```
+   hash(E_a) == template_ref_hashes[0]
+   hash(E_b) == template_ref_hashes[1]
+   ```
+
+2. **Distance computation**
+   ```
+   D_ab = Σ_k (E_a[k] - E_b[k])^2
+   ```
+
+3. **Non‑match constraint**
+   ```
+   D_ab >= T_nonmatch
+   ```
+
+4. **Distinctness constraint**
+   ```
+   E_a != E_b
+   ```
+
+5. **Bound constraints**
+   ```
+   |E_a[k]| <= MAX_EMBED
+   |E_b[k]| <= MAX_EMBED
+   ```
+
+### Output  
+A ZK proof that the identity has ≥2 distinct faces.
+
+---
+
+## CONSISTENT_IDENTITY_GRAPH  
+*(Identity data has no contradictions)*
+
+### Core idea  
+We encode identity attributes (birth, address history, employment, travel) as a graph and prove:
+
+> All constraints in the rule set hold.
+
+### Private inputs  
+- `birth_record`  
+- `address_history[]`  
+- `employment_history[]`  
+- `travel_events[]`  
+- `rule_set` (compiled constraints)
+
+### Public inputs  
+- `identity_ref_hash`  
+- `rule_set_hash`
+
+### Constraints
+
+1. **Birth record validity**
+   ```
+   birth_record.date <= NOW
+   birth_record.location != null
+   ```
+
+2. **Address timeline consistency**
+   For each address interval:
+   ```
+   address[i].start <= address[i].end
+   address[i].end <= address[i+1].start
+   ```
+
+3. **Employment timeline consistency**
+   ```
+   employment[i].start <= employment[i].end
+   ```
+
+4. **Travel feasibility**
+   For each travel event:
+   ```
+   travel[i].arrival_time >= travel[i].departure_time
+   distance(travel[i].from, travel[i].to) / travel[i].transport_speed <= travel[i].duration
+   ```
+
+5. **Rule set commitment**
+   ```
+   hash(rule_set) == rule_set_hash
+   ```
+
+### Output  
+A ZK proof that the identity graph is consistent.
+
+---
+
+## DOCUMENT_AUTH_PROOF  
+*(Document is authentic without revealing raw features)*
+
+### Private inputs  
+- `doc_features[]` — extracted features  
+- `auth_score` — authenticity score  
+- `T_auth` — threshold  
+- `hash(doc_features)` — commitment
+
+### Public inputs  
+- `document_ref_hash`  
+- `min_authenticity_threshold`
+
+### Constraints
+
+1. **Feature commitment**
+   ```
+   hash(doc_features) == document_ref_hash
+   ```
+
+2. **Authenticity score computation**
+   ```
+   auth_score = Σ w_k * doc_features[k]
+   ```
+
+3. **Threshold constraint**
+   ```
+   auth_score >= min_authenticity_threshold
+   ```
+
+4. **Feature bounds**
+   ```
+   |doc_features[k]| <= MAX_FEATURE
+   ```
+
+### Output  
+A ZK proof that the document is authentic.
+
+---
+
+## How these circuits integrate into your DAG
+
+### ZK_MATCH_ENGINE  
+Runs all circuits inside enclave.
+
+### ZK_PROOF_VALIDATOR  
+Verifies proofs and emits:
+
+- **multi_id_single_face**  
+- **single_id_multi_face**  
+- **data_inconsistency**  
+- **document_manipulation**  
+
+### RISK_AGG  
+Aggregates signals into risk scores.
+
+### CASE_MGMT  
+Opens or updates fraud cases.
+
+---
+
+Also Available:
+
+- **Full Plonk/Halo2 constraint system**  
+- **MPC variant (no single enclave)**  
+- **Secure enclave memory layout**  
+- **ZK‑friendly embedding format** (quantized, bounded, SNARK‑safe)
