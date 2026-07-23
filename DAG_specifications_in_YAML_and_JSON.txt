@@ -1,0 +1,283 @@
+Formal DAG specification, expressed in YAML (cleaner for DAGs) and JSON (for systems that require strict machine‑readable formats).  
+This is a *complete, deployable DAG spec* describing **nodes**, **edges**, **triggers**, **inputs**, **outputs**, and **governance bindings**.
+
+It matches the fraud‑detection pipeline and the ER diagram already approved.
+
+---
+
+# YAML DAG Specification  
+*(Human‑readable, ideal for orchestration frameworks)*
+
+```yaml
+dag:
+  name: planetary_identity_fraud_detection
+  version: "1.0"
+
+  nodes:
+
+    # -------------------------
+    # INGESTION LAYER
+    # -------------------------
+    - id: ID_IN
+      type: ingestion
+      description: Ingest identity_record and identity_provenance
+      triggers:
+        - event: identity.created
+        - event: identity.updated
+      outputs: [identity_record, identity_provenance]
+
+    - id: DOC_IN
+      type: ingestion
+      description: Ingest document_artifact and authenticity metadata
+      triggers:
+        - event: document.created
+        - event: document.updated
+      outputs: [document_artifact]
+
+    - id: BEHAV_IN
+      type: ingestion
+      description: Ingest behavioral events (geo, device, network, financial)
+      triggers:
+        - event: behavior.event
+      outputs: [behavior_event]
+
+    - id: BIO_IN
+      type: ingestion
+      description: Ingest biometric templates (face, fingerprint, iris, retina)
+      triggers:
+        - event: biometric.created
+        - event: biometric.updated
+      outputs: [biometric_template]
+
+
+    # -------------------------
+    # FEATURE / SIGNAL LAYER
+    # -------------------------
+    - id: DATA_CONSIST
+      type: feature
+      description: Data consistency checks for synthetic identity detection
+      inputs: [identity_record, identity_provenance]
+      outputs: [fraud_signal]
+
+    - id: DOC_AUTH
+      type: feature
+      description: Document authenticity and manipulation detection
+      inputs: [document_artifact]
+      outputs: [fraud_signal]
+
+    - id: BEHAV_ANOM
+      type: feature
+      description: Behavioral anomaly detection for stolen identity detection
+      inputs: [behavior_event]
+      outputs: [fraud_signal]
+
+    - id: MULTI_ID_FACE
+      type: feature
+      description: Multi-ID / single-face detection
+      inputs: [biometric_template]
+      outputs: [fraud_signal]
+
+    - id: SINGLE_ID_FACE
+      type: feature
+      description: Single-ID / multi-face detection
+      inputs: [biometric_template]
+      outputs: [fraud_signal]
+
+
+    # -------------------------
+    # SCORING LAYER
+    # -------------------------
+    - id: RISK_AGG
+      type: scoring
+      description: Aggregate fraud signals into identity_risk_score
+      inputs: [fraud_signal]
+      outputs: [identity_risk_score]
+
+
+    # -------------------------
+    # DECISION LAYER
+    # -------------------------
+    - id: CASE_MGMT
+      type: decision
+      description: Open or update fraud_case when risk exceeds threshold
+      inputs: [identity_risk_score, fraud_signal]
+      outputs: [fraud_case]
+
+
+    # -------------------------
+    # GOVERNANCE LAYER
+    # -------------------------
+    - id: AUDIT_LOG
+      type: governance
+      description: Write audit_log_entry for every node execution
+      inputs: [*]
+      outputs: [audit_log_entry]
+
+    - id: POLICY_ENF
+      type: governance
+      description: Enforce access_policy before node execution
+      inputs: [access_policy]
+      outputs: []
+
+
+  edges:
+
+    # INGESTION → FEATURE
+    - from: ID_IN
+      to: DATA_CONSIST
+
+    - from: DOC_IN
+      to: DOC_AUTH
+
+    - from: BEHAV_IN
+      to: BEHAV_ANOM
+
+    - from: BIO_IN
+      to: MULTI_ID_FACE
+
+    - from: BIO_IN
+      to: SINGLE_ID_FACE
+
+    # FEATURE → SCORING
+    - from: DATA_CONSIST
+      to: RISK_AGG
+
+    - from: DOC_AUTH
+      to: RISK_AGG
+
+    - from: BEHAV_ANOM
+      to: RISK_AGG
+
+    - from: MULTI_ID_FACE
+      to: RISK_AGG
+
+    - from: SINGLE_ID_FACE
+      to: RISK_AGG
+
+    # SCORING → DECISION
+    - from: RISK_AGG
+      to: CASE_MGMT
+
+    # GOVERNANCE edges
+    - from: POLICY_ENF
+      to: ID_IN
+    - from: POLICY_ENF
+      to: DOC_IN
+    - from: POLICY_ENF
+      to: BEHAV_IN
+    - from: POLICY_ENF
+      to: BIO_IN
+    - from: POLICY_ENF
+      to: DATA_CONSIST
+    - from: POLICY_ENF
+      to: DOC_AUTH
+    - from: POLICY_ENF
+      to: BEHAV_ANOM
+    - from: POLICY_ENF
+      to: MULTI_ID_FACE
+    - from: POLICY_ENF
+      to: SINGLE_ID_FACE
+    - from: POLICY_ENF
+      to: RISK_AGG
+    - from: POLICY_ENF
+      to: CASE_MGMT
+
+    # AUDIT_LOG listens to all nodes
+    - from: ID_IN
+      to: AUDIT_LOG
+    - from: DOC_IN
+      to: AUDIT_LOG
+    - from: BEHAV_IN
+      to: AUDIT_LOG
+    - from: BIO_IN
+      to: AUDIT_LOG
+    - from: DATA_CONSIST
+      to: AUDIT_LOG
+    - from: DOC_AUTH
+      to: AUDIT_LOG
+    - from: BEHAV_ANOM
+      to: AUDIT_LOG
+    - from: MULTI_ID_FACE
+      to: AUDIT_LOG
+    - from: SINGLE_ID_FACE
+      to: AUDIT_LOG
+    - from: RISK_AGG
+      to: AUDIT_LOG
+    - from: CASE_MGMT
+      to: AUDIT_LOG
+```
+
+---
+
+# JSON DAG Specification  
+*(Machine‑strict, ideal for workflow engines, microservices, or DAG schedulers)*
+
+```json
+{
+  "dag": {
+    "name": "planetary_identity_fraud_detection",
+    "version": "1.0",
+    "nodes": [
+      { "id": "ID_IN", "type": "ingestion", "triggers": ["identity.created", "identity.updated"], "outputs": ["identity_record", "identity_provenance"] },
+      { "id": "DOC_IN", "type": "ingestion", "triggers": ["document.created", "document.updated"], "outputs": ["document_artifact"] },
+      { "id": "BEHAV_IN", "type": "ingestion", "triggers": ["behavior.event"], "outputs": ["behavior_event"] },
+      { "id": "BIO_IN", "type": "ingestion", "triggers": ["biometric.created", "biometric.updated"], "outputs": ["biometric_template"] },
+
+      { "id": "DATA_CONSIST", "type": "feature", "inputs": ["identity_record", "identity_provenance"], "outputs": ["fraud_signal"] },
+      { "id": "DOC_AUTH", "type": "feature", "inputs": ["document_artifact"], "outputs": ["fraud_signal"] },
+      { "id": "BEHAV_ANOM", "type": "feature", "inputs": ["behavior_event"], "outputs": ["fraud_signal"] },
+      { "id": "MULTI_ID_FACE", "type": "feature", "inputs": ["biometric_template"], "outputs": ["fraud_signal"] },
+      { "id": "SINGLE_ID_FACE", "type": "feature", "inputs": ["biometric_template"], "outputs": ["fraud_signal"] },
+
+      { "id": "RISK_AGG", "type": "scoring", "inputs": ["fraud_signal"], "outputs": ["identity_risk_score"] },
+
+      { "id": "CASE_MGMT", "type": "decision", "inputs": ["identity_risk_score", "fraud_signal"], "outputs": ["fraud_case"] },
+
+      { "id": "AUDIT_LOG", "type": "governance", "inputs": ["*"], "outputs": ["audit_log_entry"] },
+      { "id": "POLICY_ENF", "type": "governance", "inputs": ["access_policy"], "outputs": [] }
+    ],
+
+    "edges": [
+      { "from": "ID_IN", "to": "DATA_CONSIST" },
+      { "from": "DOC_IN", "to": "DOC_AUTH" },
+      { "from": "BEHAV_IN", "to": "BEHAV_ANOM" },
+      { "from": "BIO_IN", "to": "MULTI_ID_FACE" },
+      { "from": "BIO_IN", "to": "SINGLE_ID_FACE" },
+
+      { "from": "DATA_CONSIST", "to": "RISK_AGG" },
+      { "from": "DOC_AUTH", "to": "RISK_AGG" },
+      { "from": "BEHAV_ANOM", "to": "RISK_AGG" },
+      { "from": "MULTI_ID_FACE", "to": "RISK_AGG" },
+      { "from": "SINGLE_ID_FACE", "to": "RISK_AGG" },
+
+      { "from": "RISK_AGG", "to": "CASE_MGMT" },
+
+      { "from": "POLICY_ENF", "to": "ID_IN" },
+      { "from": "POLICY_ENF", "to": "DOC_IN" },
+      { "from": "POLICY_ENF", "to": "BEHAV_IN" },
+      { "from": "POLICY_ENF", "to": "BIO_IN" },
+      { "from": "POLICY_ENF", "to": "DATA_CONSIST" },
+      { "from": "POLICY_ENF", "to": "DOC_AUTH" },
+      { "from": "POLICY_ENF", "to": "BEHAV_ANOM" },
+      { "from": "POLICY_ENF", "to": "MULTI_ID_FACE" },
+      { "from": "POLICY_ENF", "to": "SINGLE_ID_FACE" },
+      { "from": "POLICY_ENF", "to": "RISK_AGG" },
+      { "from": "POLICY_ENF", "to": "CASE_MGMT" },
+
+      { "from": "ID_IN", "to": "AUDIT_LOG" },
+      { "from": "DOC_IN", "to": "AUDIT_LOG" },
+      { "from": "BEHAV_IN", "to": "AUDIT_LOG" },
+      { "from": "BIO_IN", "to": "AUDIT_LOG" },
+      { "from": "DATA_CONSIST", "to": "AUDIT_LOG" },
+      { "from": "DOC_AUTH", "to": "AUDIT_LOG" },
+      { "from": "BEHAV_ANOM", "to": "AUDIT_LOG" },
+      { "from": "MULTI_ID_FACE", "to": "AUDIT_LOG" },
+      { "from": "SINGLE_ID_FACE", "to": "AUDIT_LOG" },
+      { "from": "RISK_AGG", "to": "AUDIT_LOG" },
+      { "from": "CASE_MGMT", "to": "AUDIT_LOG" }
+    ]
+  }
+}
+```
+
+---
