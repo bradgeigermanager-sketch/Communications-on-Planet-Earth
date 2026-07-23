@@ -1,0 +1,510 @@
+### Schema checklist
+
+**Core identity & biometrics**
+
+- [ ] **IdentityRecord** — canonical person/identity profile  
+- [ ] **BiometricTemplate** — protected facial/biometric representations  
+- [ ] **DocumentArtifact** — ID documents and their authenticity signals   [ScienceDirect](https://www.sciencedirect.com/science/article/pii/S1566253525010310)  [arXiv.org](https://arxiv.org/html/2601.12895v1)  
+
+**FRT usage & events**
+
+- [ ] **FRTQuery** — a single authorized FRT use (who, why, scope)  
+- [ ] **FRTMatchEvent** — result of a match (hit, confidence, context)  
+
+**Fraud & synthetic‑ID analytics**
+
+- [ ] **FraudSignal** — atomic anomaly or inconsistency indicator   [ScienceDirect](https://www.sciencedirect.com/science/article/pii/S0957417426025947)  [appscale.blog](https://appscale.blog/en/blog/deepfake-proof-kyc-synthetic-identity-genai-fraud-defence-2026)  
+- [ ] **IdentityRiskScore** — aggregated risk for an identity (stolen/synthetic likelihood)   [ScienceDirect](https://www.sciencedirect.com/science/article/pii/S0957417426025947)  [ScienceDirect](https://www.sciencedirect.com/science/article/pii/S1566253526003908)  
+- [ ] **FraudCase** — investigative case tying identities, signals, and actions  
+
+**Governance & rights**
+
+- [ ] **ConsentRecord** — user consents and preferences  
+- [ ] **AccessPolicy** — machine‑enforced rules for who can do what  
+- [ ] **AuditLogEntry** — immutable log of access, queries, and decisions  
+
+We’ll define each in **JSON** (for APIs/events) and **relational** form (for storage/analytics).
+
+---
+
+## 1. IdentityRecord
+
+#### JSON schema (simplified)
+
+```json
+{
+  "$id": "IdentityRecord",
+  "type": "object",
+  "properties": {
+    "identity_id": { "type": "string" },
+    "national_id_number": { "type": "string" },
+    "full_name": { "type": "string" },
+    "date_of_birth": { "type": "string", "format": "date" },
+    "identity_status": {
+      "type": "string",
+      "enum": ["active", "suspected_stolen", "suspected_synthetic", "revoked"]
+    },
+    "provenance": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source_system": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "verified": { "type": "boolean" }
+        },
+        "required": ["source_system", "created_at", "verified"]
+      }
+    }
+  },
+  "required": ["identity_id", "full_name", "date_of_birth"]
+}
+```
+
+#### Relational tables
+
+- **identity_record**
+  - identity_id (PK)
+  - national_id_number (unique, nullable)
+  - full_name
+  - date_of_birth
+  - identity_status
+- **identity_provenance**
+  - provenance_id (PK)
+  - identity_id (FK → identity_record)
+  - source_system
+  - created_at
+  - verified (boolean)
+
+---
+
+## 2. BiometricTemplate
+
+#### JSON schema
+
+```json
+{
+  "$id": "BiometricTemplate",
+  "type": "object",
+  "properties": {
+    "template_id": { "type": "string" },
+    "identity_id": { "type": "string" },
+    "modality": { "type": "string", "enum": ["face", "fingerprint", "iris"] },
+    "template_hash": { "type": "string" },
+    "encryption_scheme": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "revoked": { "type": "boolean" }
+  },
+  "required": ["template_id", "identity_id", "modality", "template_hash"]
+}
+```
+
+#### Relational
+
+- **biometric_template**
+  - template_id (PK)
+  - identity_id (FK → identity_record)
+  - modality
+  - template_hash
+  - encryption_scheme
+  - created_at
+  - revoked
+
+---
+
+## 3. DocumentArtifact
+
+(For passports, ID cards, etc., plus authenticity signals from fake‑document detectors.)   [ScienceDirect](https://www.sciencedirect.com/science/article/pii/S1566253525010310)  [arXiv.org](https://arxiv.org/html/2601.12895v1)  
+
+#### JSON schema
+
+```json
+{
+  "$id": "DocumentArtifact",
+  "type": "object",
+  "properties": {
+    "document_id": { "type": "string" },
+    "identity_id": { "type": "string" },
+    "document_type": { "type": "string" },
+    "issuer": { "type": "string" },
+    "issue_date": { "type": "string", "format": "date" },
+    "expiry_date": { "type": "string", "format": "date" },
+    "authenticity_score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "manipulation_flags": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["document_id", "identity_id", "document_type", "issuer"]
+}
+```
+
+#### Relational
+
+- **document_artifact**
+  - document_id (PK)
+  - identity_id (FK → identity_record)
+  - document_type
+  - issuer
+  - issue_date
+  - expiry_date
+  - authenticity_score
+- **document_manipulation_flag**
+  - flag_id (PK)
+  - document_id (FK → document_artifact)
+  - flag_code
+  - created_at
+
+---
+
+## 4. FRTQuery
+
+#### JSON schema
+
+```json
+{
+  "$id": "FRTQuery",
+  "type": "object",
+  "properties": {
+    "frt_query_id": { "type": "string" },
+    "requester_id": { "type": "string" },
+    "requester_org": { "type": "string" },
+    "legal_basis": { "type": "string" },
+    "purpose": {
+      "type": "string",
+      "enum": [
+        "serious_crime_investigation",
+        "counter_terrorism",
+        "missing_person",
+        "border_control",
+        "identity_fraud_investigation"
+      ]
+    },
+    "target_scope": {
+      "type": "object",
+      "properties": {
+        "location": { "type": "string" },
+        "time_window_start": { "type": "string", "format": "date-time" },
+        "time_window_end": { "type": "string", "format": "date-time" }
+      },
+      "required": ["location", "time_window_start", "time_window_end"]
+    },
+    "created_at": { "type": "string", "format": "date-time" }
+  },
+  "required": ["frt_query_id", "requester_id", "legal_basis", "purpose", "target_scope"]
+}
+```
+
+#### Relational
+
+- **frt_query**
+  - frt_query_id (PK)
+  - requester_id
+  - requester_org
+  - legal_basis
+  - purpose
+  - location
+  - time_window_start
+  - time_window_end
+  - created_at
+
+---
+
+## 5. FRTMatchEvent
+
+#### JSON schema
+
+```json
+{
+  "$id": "FRTMatchEvent",
+  "type": "object",
+  "properties": {
+    "match_event_id": { "type": "string" },
+    "frt_query_id": { "type": "string" },
+    "template_id": { "type": "string" },
+    "identity_id": { "type": "string" },
+    "match_confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "match_time": { "type": "string", "format": "date-time" },
+    "match_location": { "type": "string" },
+    "review_status": {
+      "type": "string",
+      "enum": ["pending_review", "confirmed", "dismissed"]
+    }
+  },
+  "required": ["match_event_id", "frt_query_id", "match_confidence", "match_time"]
+}
+```
+
+#### Relational
+
+- **frt_match_event**
+  - match_event_id (PK)
+  - frt_query_id (FK → frt_query)
+  - template_id (FK → biometric_template)
+  - identity_id (FK → identity_record)
+  - match_confidence
+  - match_time
+  - match_location
+  - review_status
+
+---
+
+## 6. FraudSignal
+
+(Atomic anomaly: inconsistent data, suspicious behavior, document manipulation, multi‑ID/one‑face, etc.)   [ScienceDirect](https://www.sciencedirect.com/science/article/pii/S0957417426025947)  [appscale.blog](https://appscale.blog/en/blog/deepfake-proof-kyc-synthetic-identity-genai-fraud-defence-2026)  
+
+#### JSON schema
+
+```json
+{
+  "$id": "FraudSignal",
+  "type": "object",
+  "properties": {
+    "signal_id": { "type": "string" },
+    "identity_id": { "type": "string" },
+    "signal_type": {
+      "type": "string",
+      "enum": [
+        "data_inconsistency",
+        "behavior_anomaly",
+        "document_manipulation",
+        "multi_id_single_face",
+        "single_id_multi_face"
+      ]
+    },
+    "source_system": { "type": "string" },
+    "severity": { "type": "integer", "minimum": 1, "maximum": 5 },
+    "details": { "type": "string" },
+    "detected_at": { "type": "string", "format": "date-time" }
+  },
+  "required": ["signal_id", "identity_id", "signal_type", "source_system", "severity"]
+}
+```
+
+#### Relational
+
+- **fraud_signal**
+  - signal_id (PK)
+  - identity_id (FK → identity_record)
+  - signal_type
+  - source_system
+  - severity
+  - details (text)
+  - detected_at
+
+---
+
+## 7. IdentityRiskScore
+
+(Aggregated synthetic/stolen‑ID risk.)   [ScienceDirect](https://www.sciencedirect.com/science/article/pii/S0957417426025947)  [ScienceDirect](https://www.sciencedirect.com/science/article/pii/S1566253526003908)  
+
+#### JSON schema
+
+```json
+{
+  "$id": "IdentityRiskScore",
+  "type": "object",
+  "properties": {
+    "risk_score_id": { "type": "string" },
+    "identity_id": { "type": "string" },
+    "score_value": { "type": "number", "minimum": 0, "maximum": 1 },
+    "score_type": {
+      "type": "string",
+      "enum": ["synthetic_risk", "stolen_risk", "overall_identity_risk"]
+    },
+    "computed_at": { "type": "string", "format": "date-time" },
+    "model_version": { "type": "string" }
+  },
+  "required": ["risk_score_id", "identity_id", "score_value", "score_type", "computed_at"]
+}
+```
+
+#### Relational
+
+- **identity_risk_score**
+  - risk_score_id (PK)
+  - identity_id (FK → identity_record)
+  - score_value
+  - score_type
+  - computed_at
+  - model_version
+
+---
+
+## 8. FraudCase
+
+#### JSON schema
+
+```json
+{
+  "$id": "FraudCase",
+  "type": "object",
+  "properties": {
+    "case_id": { "type": "string" },
+    "opened_by": { "type": "string" },
+    "opened_at": { "type": "string", "format": "date-time" },
+    "status": {
+      "type": "string",
+      "enum": ["open", "under_review", "closed"]
+    },
+    "primary_identity_id": { "type": "string" },
+    "related_identity_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "linked_signal_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["case_id", "opened_by", "opened_at", "status"]
+}
+```
+
+#### Relational
+
+- **fraud_case**
+  - case_id (PK)
+  - opened_by
+  - opened_at
+  - status
+  - primary_identity_id (FK → identity_record)
+- **fraud_case_identity**
+  - case_identity_id (PK)
+  - case_id (FK → fraud_case)
+  - identity_id (FK → identity_record)
+- **fraud_case_signal**
+  - case_signal_id (PK)
+  - case_id (FK → fraud_case)
+  - signal_id (FK → fraud_signal)
+
+---
+
+## 9. ConsentRecord
+
+#### JSON schema
+
+```json
+{
+  "$id": "ConsentRecord",
+  "type": "object",
+  "properties": {
+    "consent_id": { "type": "string" },
+    "identity_id": { "type": "string" },
+    "consent_type": { "type": "string" },
+    "granted": { "type": "boolean" },
+    "granted_at": { "type": "string", "format": "date-time" },
+    "expires_at": { "type": ["string", "null"], "format": "date-time" }
+  },
+  "required": ["consent_id", "identity_id", "consent_type", "granted", "granted_at"]
+}
+```
+
+#### Relational
+
+- **consent_record**
+  - consent_id (PK)
+  - identity_id (FK → identity_record)
+  - consent_type
+  - granted (boolean)
+  - granted_at
+  - expires_at (nullable)
+
+---
+
+## 10. AccessPolicy
+
+#### JSON schema
+
+```json
+{
+  "$id": "AccessPolicy",
+  "type": "object",
+  "properties": {
+    "policy_id": { "type": "string" },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "allowed_purposes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "roles_allowed": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "active": { "type": "boolean" }
+  },
+  "required": ["policy_id", "name", "allowed_purposes", "roles_allowed"]
+}
+```
+
+#### Relational
+
+- **access_policy**
+  - policy_id (PK)
+  - name
+  - description
+  - created_at
+  - active
+- **access_policy_purpose**
+  - policy_purpose_id (PK)
+  - policy_id (FK → access_policy)
+  - purpose
+- **access_policy_role**
+  - policy_role_id (PK)
+  - policy_id (FK → access_policy)
+  - role_name
+
+---
+
+## 11. AuditLogEntry
+
+#### JSON schema
+
+```json
+{
+  "$id": "AuditLogEntry",
+  "type": "object",
+  "properties": {
+    "log_id": { "type": "string" },
+    "actor_id": { "type": "string" },
+    "actor_org": { "type": "string" },
+    "action_type": {
+      "type": "string",
+      "enum": [
+        "view_identity",
+        "update_identity",
+        "run_frt_query",
+        "view_frt_match",
+        "compute_risk_score",
+        "open_fraud_case"
+      ]
+    },
+    "target_id": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "legal_basis": { "type": "string" },
+    "policy_id": { "type": "string" }
+  },
+  "required": ["log_id", "actor_id", "action_type", "timestamp"]
+}
+```
+
+#### Relational
+
+- **audit_log_entry**
+  - log_id (PK)
+  - actor_id
+  - actor_org
+  - action_type
+  - target_id
+  - timestamp
+  - legal_basis
+  - policy_id (FK → access_policy)
+
+---
+
+Also:
+
+- API flows (e.g., how a fraud‑detection pipeline uses FraudSignal + IdentityRiskScore), or  
+- Constraints and indices (e.g., uniqueness, foreign‑key cascades) tuned for anomaly detection and rights‑preserving auditability.
