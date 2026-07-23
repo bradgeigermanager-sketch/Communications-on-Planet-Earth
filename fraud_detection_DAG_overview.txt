@@ -1,0 +1,120 @@
+### High-level DAG overview
+
+| Layer | Purpose | Key Nodes |
+|-------|---------|-----------|
+| Ingestion | Bring in identity, document, behavioral, biometric data | ID_IN, DOC_IN, BEHAV_IN, BIO_IN |
+| Feature/Signal | Compute anomalies and fraud signals | DATA_CONSIST, DOC_AUTH, BEHAV_ANOM, MULTI_ID_FACE, SINGLE_ID_FACE |
+| Scoring | Aggregate signals into risk scores | RISK_AGG |
+| Decision | Open/update fraud cases, trigger review | CASE_MGMT |
+| Governance | Log, enforce policies, oversight | AUDIT_LOG, POLICY_ENF |
+
+---
+
+### 1. Node list (DAG components)
+
+**Ingestion nodes**
+
+- **ID_IN:**  
+  Ingest/refresh `identity_record`, `identity_provenance`.
+- **DOC_IN:**  
+  Ingest `document_artifact`, authenticity scores, manipulation flags.
+- **BEHAV_IN:**  
+  Ingest behavioral data (transactions, geolocation, devices, networks).
+- **BIO_IN:**  
+  Ingest `biometric_template`, `face_template`, etc.
+
+**Feature/signal nodes**
+
+- **DATA_CONSIST:**  
+  Runs `CHECK_DATA_CONSISTENCY` → emits `fraud_signal` of type `data_inconsistency`.
+- **DOC_AUTH:**  
+  Runs `CHECK_DOCUMENT_AUTHENTICITY` → emits `fraud_signal` of type `document_manipulation`.
+- **BEHAV_ANOM:**  
+  Runs `CHECK_BEHAVIOR_ANOMALIES` → emits `fraud_signal` of type `behavior_anomaly`.
+- **MULTI_ID_FACE:**  
+  Runs `CHECK_MULTI_ID_SINGLE_FACE` → emits `fraud_signal` of type `multi_id_single_face`.
+- **SINGLE_ID_FACE:**  
+  Runs `CHECK_SINGLE_ID_MULTI_FACE` → emits `fraud_signal` of type `single_id_multi_face`.
+
+**Scoring node**
+
+- **RISK_AGG:**  
+  Runs `COMPUTE_RISK_SCORE` over all signals for an identity → writes `identity_risk_score`.
+
+**Decision nodes**
+
+- **CASE_MGMT:**  
+  Runs `OPEN_OR_UPDATE_FRAUD_CASE` when risk ≥ threshold → writes `fraud_case`, links signals.
+
+**Governance nodes**
+
+- **AUDIT_LOG:**  
+  Runs `LOG_AUDIT` for every upstream node execution → writes `audit_log_entry`.
+- **POLICY_ENF:**  
+  Enforces `access_policy` on DAG execution (who can trigger which nodes, under what legal basis).
+
+---
+
+### 2. DAG structure (ASCII)
+
+```text
+          ID_IN        DOC_IN        BEHAV_IN        BIO_IN
+            |            |             |              |
+            v            v             v              v
+      DATA_CONSIST    DOC_AUTH     BEHAV_ANOM   MULTI_ID_FACE
+                                                SINGLE_ID_FACE
+            \            |             |          /
+             \           |             |         /
+              \          |             |        /
+               \         |             |       /
+                \        |             |      /
+                         v             v
+                       RISK_AGG  <----/
+                          |
+                          v
+                       CASE_MGMT
+                          |
+                          v
+                       AUDIT_LOG
+                          ^
+                          |
+                      POLICY_ENF
+```
+
+---
+
+### 3. Edge semantics
+
+- **ID_IN → DATA_CONSIST**  
+  When identity data changes or is created, run consistency checks.
+- **DOC_IN → DOC_AUTH**  
+  When a document is added/updated, run authenticity checks.
+- **BEHAV_IN → BEHAV_ANOM**  
+  On new behavioral events, run anomaly detection.
+- **BIO_IN → MULTI_ID_FACE / SINGLE_ID_FACE**  
+  On new or updated face templates, run cross‑identity checks.
+
+- **DATA_CONSIST / DOC_AUTH / BEHAV_ANOM / MULTI_ID_FACE / SINGLE_ID_FACE → RISK_AGG**  
+  Any new `fraud_signal` for an identity triggers risk recomputation.
+
+- **RISK_AGG → CASE_MGMT**  
+  If risk ≥ threshold, open/update a `fraud_case`.
+
+- **All nodes → AUDIT_LOG**  
+  Every execution logs an `audit_log_entry` with actor, action, target, policy.
+
+- **POLICY_ENF → all nodes**  
+  Before any node runs, check `access_policy` (purpose, role, legal basis).
+
+---
+
+### 4. Real-time behavior
+
+- **Event-driven:**  
+  Each ingestion node is triggered by events (new ID, new doc, new transaction, new biometric).
+- **Signal streaming:**  
+  Feature nodes emit `fraud_signal` records into a stream; `RISK_AGG` subscribes and recomputes scores.
+- **Case lifecycle:**  
+  `CASE_MGMT` updates case status in near real time as new signals arrive.
+- **Oversight baked in:**  
+  `AUDIT_LOG` and `POLICY_ENF` ensure every edge traversal is governed and traceable.
