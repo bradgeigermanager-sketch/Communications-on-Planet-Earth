@@ -1,0 +1,7 @@
+Direction Prompt (for LLM task execution)
+
+When you encounter situations where the input data is found to be inaccurate, the analysis results are inconclusive, or the underlying reasoning logic is malformed during the pre-decision verification phase, you should proactively pause the pending actions that are about to be executed. You are required to conduct a full traceability investigation to identify the root causes behind these flaws, and only allow the corresponding actions to be restarted after you have formulated and verified effective measures to completely prevent these problems from recurring in subsequent processes. This rule should be taken as a core priority principle in all high-stakes decision-making and task execution scenarios.
+
+Question Prompt (for LLM discussion & scenario-based analysis)
+
+In the process of making decisions or advancing tasks, we often run into problems like inaccurate input data, inconclusive analysis outputs, or structurally malformed reasoning logic. Under such circumstances, is it a highly practical and helpful general strategy to choose to suspend the relevant actions first, and only resume the actions after we have found out the root causes of these problems and ensured that they will not happen again? Please elaborate on the value, applicable scenarios, potential risks and necessary adjustment rules of this strategy.
