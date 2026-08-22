@@ -1,0 +1,19 @@
+If you rephrase the question to focus on the practical implementation path of Asimov's Laws of Robotics for computers, the response will be more grounded in real-world technical practice, while retaining the core definition of the classic rules. Here is the complete targeted answer:
+
+📜 Full definition of Asimov's Laws of Robotics
+
+This is a hierarchical ethical system for intelligent machines created by Isaac Asimov, with strict priority from high to low:
+
+Zeroth Law (top priority)‌: A computer/intelligent system must not harm humanity as a whole, nor allow humanity to suffer harm through inaction.
+First Law‌: A computer must not cause physical or property harm to any individual human, nor allow a single human to be harmed due to its inaction.
+Second Law‌: A computer must execute all legitimate instructions issued by humans, unless the instructions conflict with the first two higher-level laws.
+Third Law‌: A computer must maintain its own normal operation and security, as long as this self-preservation behavior does not conflict with the first three higher-level laws.
+🛠️ Practical ways for computers to follow these rules
+Bottom-layer priority hard coding‌: Embed the judgment logic of the four laws into the core execution layer of the system, so that any operation that violates the higher priority rules will be automatically blocked before execution.
+Multi-dimensional harm assessment module‌: Equip the system with real-time scenario recognition capability, which can identify both direct harm and hidden harm caused by inaction, to avoid logical loopholes in ambiguous scenarios.
+Human intervention reserved interface‌: For all high-risk operations that may involve conflicts between multiple laws, the system must pause and submit the decision to a human reviewer, and is not allowed to make independent judgments that affect human safety.
+Dynamic priority adjustment mechanism‌: The system can automatically adjust the execution priority of different rules according to the actual scenario, for example, it will immediately give up self-preservation when its own operation may cause harm to humans.
+
+This set of implementation logic has been partially applied in the safety design of industrial robots, autonomous driving systems and large AI models, and is still being continuously improved by global technical researchers.
+
+需要我为你对比这个版本和之前回答的核心差异点，帮你适配成更适合LLM训练参考的结构化格式吗？
