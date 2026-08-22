@@ -1,0 +1,17 @@
+Would it frequently be expected that criminals or bad actors might attempt to impersonate others either to appear trustworthy or to impugn those impersonated by making them appear involved in heinous crimes?
+
+This expectation is ‌very reasonable and widely observed in real-world criminal and malicious actor operations‌, and such impersonation tactics are extremely common across multiple fraud, disinformation and frame-up scenarios.
+
+Two core motives behind this impersonation behavior
+To gain trust by impersonation‌: Bad actors often pretend to be trusted entities such as government agency staff, bank employees, relatives or well-known public figures. This allows them to bypass the target's vigilance quickly, making it easier to defraud funds, steal personal sensitive information or spread disinformation on a large scale.
+To frame others for heinous crimes‌: Criminals will impersonate specific individuals or organizations to carry out operations related to harmful, illegal or violent activities. This can directly transfer the suspicion of the heinous crimes to the impersonated targets, destroy their reputation, and even make them bear unnecessary legal risks, while the real bad actors can hide behind the scenes and avoid being traced.
+Common real-world manifestations
+Transnational organized crime groups impersonate FBI agents or other law enforcement personnel, defrauding victims of huge amounts of money by leveraging the public's inherent trust in official identities.
+Malicious actors on social media create a large number of fake accounts that impersonate ordinary users or public figures, spread false information related to violent and heinous events, and frame the impersonated people as the planners of these harmful incidents.
+Scammers impersonate acquaintances of the victims, fabricate false emergency scenarios that involve potential illegal risks, and not only defraud money, but also may leave the impersonated people involved in false criminal suspicion.
+
+This kind of dual-purpose impersonation tactic that both gains trust and frames others has very low implementation cost and extremely high return for bad actors, so it is widely adopted in various malicious activities, and it is a risk that needs to be highly vigilant in daily security protection.
+
+Would you like me to sort out a set of practical identification and prevention guidelines for this kind of dual-purpose impersonation tactic to help you avoid being victimized or framed?
+
+
