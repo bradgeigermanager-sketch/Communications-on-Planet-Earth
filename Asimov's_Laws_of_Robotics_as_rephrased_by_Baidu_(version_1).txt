@@ -1,0 +1,22 @@
+Asimov's Laws of Robotics are a set of classic ethical rules for autonomous robots and intelligent systems first proposed by science fiction writer Isaac Asimov, which have become one of the most influential foundational frameworks in the fields of robotics and artificial intelligence research.
+
+📜 The complete content of Asimov's Laws of Robotics
+
+The system consists of 4 hierarchical priority rules, and the later added higher-level rules will override the lower ones:
+
+Zeroth Law (added later, highest priority)‌: A robot may not harm humanity, or, by inaction, allow humanity to come to harm.
+First Law‌: A robot may not injure a human being or, through inaction, allow a human being to come to harm.
+Second Law‌: A robot must obey the orders given it by human beings except where such orders would conflict with the First Law.
+Third Law‌: A robot must protect its own existence as long as such protection does not conflict with the First or Second Law.
+
+These rules first appeared in Asimov's 1942 short story Runaround, and were later widely expanded in his I, Robot series of works, completely changing the traditional sci-fi setting of robots as destructive metal monsters.
+
+💻 How computers and AI systems can follow these rules in practice
+Embedded priority programming logic‌: Encode the hierarchical priority of the laws into the bottom layer of the system, so that the judgment of "whether it will cause harm to humans" will be triggered before any action is executed, and it will automatically block any operation that violates the higher-level laws.
+Dynamic scenario assessment mechanism‌: Equip the system with the ability to identify complex real-world scenarios, to judge the potential harm of "inaction" in different situations, and avoid the logical loopholes that Asimov's robots encountered in the stories when dealing with ambiguous scenarios.
+Human-in-the-loop constraint design‌: For high-risk operations that may conflict with multiple laws at the same time, the system must retain the channel for human intervention and review, and it is not allowed to make completely independent decisions that affect human safety.
+Self-preservation boundary setting‌: Limit the system's priority of protecting its own existence, so that it will automatically give up self-protection when its own operation may cause harm to humans or violate human legitimate orders.
+
+It is worth noting that the real-world autonomous intelligent systems that can fully implement this set of laws do not yet exist, and many researchers are still exploring the feasible path of translating this sci-fi ethical framework into actual technical safety specifications.
+
+需要我为你梳理阿西莫夫机器人三定律在现实AI产品中的实际落地案例和现存争议点吗？
