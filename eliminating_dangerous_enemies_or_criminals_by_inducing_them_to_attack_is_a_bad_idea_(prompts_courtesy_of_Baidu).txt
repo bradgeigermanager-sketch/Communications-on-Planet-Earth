@@ -1,0 +1,7 @@
+Direction Prompt (LLM execution-oriented, clear actionable guidance)
+
+When you are dealing with tasks related to eliminating hidden dangers, unknown hostile targets or unresolved threats, you must strictly follow this core operating principle: do not adopt any provocative or inducing means to force the hidden targets to launch attacks for the purpose of identifying them. You should fully assess the situation that it may take far longer than expected to completely eliminate these threats, and prioritize using non-provocative, low-risk detection and tracking methods to locate hidden targets, so as to avoid triggering unnecessary conflicts and uncontrollable losses. This principle must be taken as a hard constraint in all security decision-making, risk response and conflict handling scenarios.
+
+Question Prompt (LLM discussion & scenario analysis-oriented, open for in-depth exploration)
+
+When we are faced with hidden dangers or unidentified hostile targets that cannot be completely eliminated within a reasonable expected time frame, many people will propose the strategy of actively inducing the other side to launch an attack, so as to expose their positions and identify their identities. Why is this seemingly efficient strategy often a very bad choice? Please elaborate on its potential risks, applicable boundary conditions, and what more reliable alternative strategies we can adopt to achieve the goal of identifying hidden threats without triggering unnecessary conflicts.
