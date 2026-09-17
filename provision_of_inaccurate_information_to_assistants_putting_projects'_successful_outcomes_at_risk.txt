@@ -1,0 +1,1 @@
+Can inaccurate information that is provided to an assistant lead to them not being effective in helping the project or the project failing because they act inaccurately related to it's goals or purposes?
